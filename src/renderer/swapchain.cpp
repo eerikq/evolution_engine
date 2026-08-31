@@ -10,7 +10,7 @@ static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR capabilities) 
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) return capabilities.currentExtent;
 
     int width, height;
-    windowGetSize(&width, &height);
+    window::GetSizeInPixels(&width, &height);
 
     return {
         std::clamp(static_cast<uint32_t>(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
@@ -77,7 +77,7 @@ VkResult swapchainCreate(
 
     VkPresentModeKHR present_mode = chooseSwapPresentMode(present_modes.data(), present_modes.size());
 
-    VkSwapchainCreateInfoKHR swap_chain_create_info {
+    VkSwapchainCreateInfoKHR swapchain_create_info {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = surface,
         .minImageCount = min_image_count,
@@ -93,7 +93,7 @@ VkResult swapchainCreate(
         .clipped = VK_TRUE
     };
 
-    return vkCreateSwapchainKHR(logical_device, &swap_chain_create_info, nullptr, swapchain);
+    return vkCreateSwapchainKHR(logical_device, &swapchain_create_info, nullptr, swapchain);
 }
 
 void swapchainDestroy(
