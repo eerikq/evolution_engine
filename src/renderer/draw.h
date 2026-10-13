@@ -1,5 +1,7 @@
 #pragma once
 
+#include "shader_variables.h"
+
 #include <volk.h>
 
 void drawFrame(
@@ -14,11 +16,15 @@ void drawFrame(
     const VkCommandBuffer* command_buffers,
     const VkImage* swapchain_images,
     const VkImageView* swapchain_image_views,
+    const VkImage* depth_image,
+    const VkImageView* depth_image_view,
     const VkPipeline graphics_pipeline,
     const VkPipelineLayout pipeline_layout,
     const VkDescriptorSet* descriptor_sets,
     const VkExtent2D swapchain_extent,
     const VkBuffer* vertex_buffer,
     const VkBuffer* index_buffer,
-    void** uniform_buffers_mapped
+    void** uniform_buffers_mapped,
+    const uint32_t index_buffer_size,
+    const ShaderVariables shader_variables
 );

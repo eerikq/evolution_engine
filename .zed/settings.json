@@ -1,0 +1,14 @@
+{
+  "format_on_save": "on",
+  "languages": {
+    "Lua": {
+      "format_on_save": "off",
+    },
+    "C++": {
+      "format_on_save": "on",
+    },
+    "Markdown": {
+      "format_on_save": "off",
+    },
+  },
+}
