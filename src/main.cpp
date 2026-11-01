@@ -157,7 +157,7 @@ void init_vulkan() {
     commandAllocateBuffers(device_context.logical_device, vulkan_context.command_pool, vulkan_context.command_buffers.data());
 
     // model
-    model::Load("assets/viking_room.obj", &buffer_context.vertices, &buffer_context.indices);
+    // model::Load("assets/viking_room.obj", &buffer_context.vertices, &buffer_context.indices);
 
     // vertex buffer
     buffer::Create(
