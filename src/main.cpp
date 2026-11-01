@@ -235,9 +235,11 @@ void main_loop() {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
+        /*
         ImGui::SliderFloat3("Sun Direction", shader_variables.sun_direction, -180.0f, 180.0f);
         ImGui::SliderFloat3("Sun Color", shader_variables.sun_color, 0.0f, 1.0f);
         ImGui::SliderFloat("Sun Intensity", &shader_variables.sun_intensity, 0.0f, 64.0f);
+        */
 
         ImGui::Render();
 
