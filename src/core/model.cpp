@@ -1,6 +1,6 @@
 #include "model.h"
 
-#include "util/log.h"
+#include "core/log.h"
 
 #include <tiny_obj_loader.h>
 #include <unordered_map>

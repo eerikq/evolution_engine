@@ -1,3 +1,4 @@
+/*
 // fundemental (core)
 #include "shader_variables.h"
 #include "util/image.h"
@@ -262,14 +263,34 @@ void cleanup() {
 
     window::Destroy(&sdl_window);
 }
+*/
+
+#include "core/log.h"
+#include "platform/platform.h"
+
+#include <stdlib.h>
 
 int main() {
     try {
-        window::Create(&sdl_window);
-        init_vulkan();
-        init_imgui();
-        main_loop();
-        cleanup();
+        platform::WindowDescription description;
+        platform::Init(&description);
+
+        platform::Window window;
+        platform::CreateWindow(&window, &description);
+
+        // initialize vulkan
+        // (renderer.cpp)
+
+        // *maybe* initialize imgui here somewhere as well? unsure
+
+        // enter vulkan main loop
+        // (renderer.cpp)
+
+        // vulkan cleanup
+        // (renderer.cpp)
+
+        platform::DestroyWindow(&window);
+        platform::Quit();
     } catch (const std::exception& e) {
         evoLog(PrintSeverity::Fatal, "{}", e.what());
         return EXIT_FAILURE;
