@@ -1,19 +1,19 @@
 #pragma once
 
-#include <SDL3/SDL_vulkan.h>
+struct SDL_Window;
 
 namespace platform {
     struct Window {
-        SDL_Window* window;
-        VkSurfaceKHR surface;
-        int width, height;
-        bool was_resized;
-        bool should_close;
+        SDL_Window* window = nullptr;
+        int width = 0;
+        int height = 0;
+        bool was_resized = false;
+        bool should_close = false;
     };
 
     struct WindowDescription {
-        const char* app_name = "Evolution Renderer";
-        const char* app_identifier = "eerikq.evolution_renderer";
+        const char* app_name = "Evolution Engine";
+        const char* app_identifier = "eerikq.evolution_engine";
         const char* app_version = "0.0.1";
 
         int default_width = 1200;
@@ -21,16 +21,14 @@ namespace platform {
     };
 
     bool Init(const WindowDescription* description);
+    void PollEvents(Window* window);
     void Quit();
 
     bool CreateWindow(Window* window, const WindowDescription* description);
+    void ResizeWindow(Window* window);
     void DestroyWindow(Window* window);
 
-    bool CreateSurface(Window* window, const VkInstance instance);
-    void DestroySurface(Window* window, const VkInstance instance);
-
-    const char* const* GetWindowInstanceExtensions(uint32_t* count);
-
+    /*
     // not strictly relevant right now, mostly for the future.
     // this also doesn't belong here, will 100% need to be moved out to the engine.
     struct Time {
@@ -42,4 +40,5 @@ namespace platform {
     };
 
     void UpdateTime(Time* time);
+    */
 } // namespace platform
