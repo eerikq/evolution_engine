@@ -11,7 +11,7 @@ namespace platform {
         bool should_close = false;
     };
 
-    struct WindowDescription {
+    struct WindowDesc {
         const char* app_name = "Evolution Engine";
         const char* app_identifier = "eerikq.evolution_engine";
         const char* app_version = "0.0.1";
@@ -20,14 +20,13 @@ namespace platform {
         int default_height = 900;
     };
 
-    bool Init(const WindowDescription* description);
+    bool Init(const WindowDesc* description);
     void PollEvents(Window* window);
     void Quit();
 
-    bool CreateWindow(Window* window, const WindowDescription* description);
+    bool CreateWindow(Window* window, const WindowDesc* description);
     void ResizeWindow(Window* window);
     void DestroyWindow(Window* window);
-
     /*
     // not strictly relevant right now, mostly for the future.
     // this also doesn't belong here, will 100% need to be moved out to the engine.
