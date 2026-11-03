@@ -270,30 +270,32 @@
 
 #include <cstdio>
 #include <exception>
-#include <stdlib.h>
+
+// custom ifndefs to avoid including <stdlib.h>
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
 
 int main() {
     try {
         platform::Window window;
-        platform::WindowDesc window_description = {
+        platform::WindowDesc window_descriptor = {
             .app_name = "Evolution Engine",
             .app_identifier = "eerikq.evolution_engine",
             .app_version = "0.0.1",
             .default_width = 1200,
             .default_height = 900,
         };
-        platform::Init(&window_description);
-        platform::CreateWindow(&window, &window_description);
 
-        renderer::RendererResources* renderer_resources = nullptr;
-        renderer::RendererDesc renderer_description = {
-            .max_frames_in_flight = 2,
-            .required_validation_layers = {
-                "VK_LAYER_KHRONOS_validation",
-            },
-        };
+        if (!platform::Init(&window_descriptor)) return EXIT_FAILURE;
+        if (!platform::CreateWindow(&window, &window_descriptor)) return EXIT_FAILURE;
 
-        renderer::Create(renderer_resources, &renderer_description, &window);
+        renderer::Renderer* renderer_resources = nullptr;
+        renderer::RendererDesc renderer_desc {};
+        if (!renderer::Create(renderer_resources, &renderer_desc, &window)) return EXIT_FAILURE;
 
         while (!window.should_close) {
             platform::PollEvents(&window);
@@ -304,7 +306,7 @@ int main() {
             renderer::DrawFrame();
         }
 
-        renderer::Destroy();
+        renderer::Destroy(renderer_resources, &renderer_desc, &window);
 
         platform::DestroyWindow(&window);
         platform::Quit();

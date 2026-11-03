@@ -1,14 +1,48 @@
 #pragma once
 
 #include <volk.h>
+VK_DEFINE_HANDLE(VmaAllocator)
 
-namespace device {
-    VkResult PickPhysical(const VkInstance instance, VkPhysicalDevice* physical_device);
-    VkResult CreateLogical(const VkPhysicalDevice physical_device, const VkSurfaceKHR surface, uint32_t* graphics_queue_index, VkDevice* logical_device);
-    void DestroyLogical(VkDevice* logical_device, VkQueue* graphics_queue);
+namespace gfx {
+    struct Device {
+        VkPhysicalDevice physical = nullptr;
+        VkDevice logical = nullptr;
+        VkQueue graphics_queue = nullptr;
+        uint32_t queue_family_index = 0;
+        VmaAllocator allocator = nullptr;
 
-    void GetPhysicalProperties(const VkPhysicalDevice physical_device, VkPhysicalDeviceProperties2* properties);
-    void GetPhysicalFeatures(const VkPhysicalDevice physical_device, VkPhysicalDeviceFeatures2* properties);
+        VkPhysicalDeviceExtendedDynamicStateFeaturesEXT features_dynamic {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT,
+        };
+        VkPhysicalDeviceVulkan13Features features_vulkan_13 {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+            .pNext = &features_dynamic,
+        };
+        VkPhysicalDeviceVulkan11Features features_vulkan_11 {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+            .pNext = &features_vulkan_13,
+        };
+        VkPhysicalDeviceFeatures2 device_features {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+            .pNext = &features_vulkan_11,
+        };
 
-    void GetLogicalQueue(const VkDevice logical_device, const uint32_t graphics_queue_index, VkQueue* graphics_queue);
-} // namespace device
+        VkPhysicalDeviceProperties2 device_properties {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+        };
+    };
+
+    struct DeviceDesc {
+        uint32_t device_extensions_count;
+        const char* device_extensions;
+    };
+
+    bool PickPhysicalDevice(Device* device, const DeviceDesc* desc, const VkInstance instance);
+    bool CreateLogicalDevice(Device* device, const DeviceDesc* desc, const VkSurfaceKHR surface);
+    void DestroyLogicalDevice(Device* device);
+
+    void GetLogicalQueue(Device* device, const uint32_t queue_index = 0);
+
+    // void GetPhysicalProperties(const VkPhysicalDevice physical_device, VkPhysicalDeviceProperties2* properties);
+    // void GetPhysicalFeatures(const VkPhysicalDevice physical_device, VkPhysicalDeviceFeatures2* properties);
+} // namespace gfx

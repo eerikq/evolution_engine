@@ -22,6 +22,8 @@ void platform::PollEvents(Window* window) {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_EventType::SDL_EVENT_QUIT) {
             window->should_close = true;
+        } else if (event.type == SDL_EventType::SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_ESCAPE) {
+            window->should_close = true;
         } else if (event.type == SDL_EventType::SDL_EVENT_WINDOW_RESIZED) {
             window->was_resized = true;
         }
@@ -64,7 +66,7 @@ bool platform::CreateSurface(const Window* window, const VkInstance instance, Vk
         return false;
     }
 
-    evoLog(PrintSeverity::Debug, "Created window surface");
+    evoLog(PrintSeverity::Info, "Created window surface");
     return true;
 }
 
