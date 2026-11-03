@@ -270,11 +270,12 @@
 
 #include <cstdio>
 #include <exception>
+#include <stdlib.h>
 
 int main() {
     try {
         platform::Window window;
-        platform::WindowDescription window_description = {
+        platform::WindowDesc window_description = {
             .app_name = "Evolution Engine",
             .app_identifier = "eerikq.evolution_engine",
             .app_version = "0.0.1",
@@ -287,7 +288,6 @@ int main() {
         renderer::RendererResources* renderer_resources = nullptr;
         renderer::RendererDesc renderer_description = {
             .max_frames_in_flight = 2,
-            .use_validation_layers = true,
             .required_validation_layers = {
                 "VK_LAYER_KHRONOS_validation",
             },

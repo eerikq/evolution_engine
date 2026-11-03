@@ -1,10 +1,10 @@
-#include "SDL3/SDL_video.h"
 #include "core/log.h"
-#include "evo/platform.h"
+#include "platform/platform_sdl3_vulkan.h"
 
-#include <SDL3/SDL.h>
+#include <SDL3/SDL_init.h>
+#include <evo/platform.h>
 
-bool platform::Init(const WindowDescription* description) {
+bool platform::Init(const WindowDesc* description) {
     SDL_SetAppMetadata(description->app_name, description->app_version, description->app_identifier);
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -32,7 +32,7 @@ void platform::Quit() {
     SDL_Quit();
 }
 
-bool platform::CreateWindow(Window* window, const WindowDescription* description) {
+bool platform::CreateWindow(Window* window, const WindowDesc* description) {
     window->window = SDL_CreateWindow(description->app_name, description->default_width, description->default_height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
 
     if (!window->window) {
@@ -56,22 +56,24 @@ void platform::DestroyWindow(Window* window) {
     evoLog(PrintSeverity::Debug, "Destroyed SDL window");
 }
 
-// bool platform::CreateSurface(Window* window, const VkInstance instance) {
-//     if (!SDL_Vulkan_CreateSurface(window->window, instance, nullptr, &window->surface)) {
-//         evoLog(PrintSeverity::Error, "Failed to create a Vulkan surface: {}", SDL_GetError());
-//         return false;
-//     }
+// ------------------ sdl3_vulkan ------------------
 
-//     evoLog(PrintSeverity::Debug, "Created window surface");
-//     return true;
-// }
+bool platform::CreateSurface(const Window* window, const VkInstance instance, VkSurfaceKHR* surface) {
+    if (!SDL_Vulkan_CreateSurface(window->window, instance, nullptr, surface)) {
+        evoLog(PrintSeverity::Error, "Failed to create a Vulkan surface: {}", SDL_GetError());
+        return false;
+    }
 
-// void platform::DestroySurface(Window* window, const VkInstance instance) {
-//     SDL_Vulkan_DestroySurface(instance, window->surface, nullptr);
-//     window->surface = nullptr;
-//     evoLog(PrintSeverity::Debug, "Destroyed window surface");
-// }
+    evoLog(PrintSeverity::Debug, "Created window surface");
+    return true;
+}
 
-// const char* const* platform::GetWindowInstanceExtensions(uint32_t* count) {
-//     return SDL_Vulkan_GetInstanceExtensions(count);
-// }
+void platform::DestroySurface(Window* window, const VkInstance instance, VkSurfaceKHR* surface) {
+    SDL_Vulkan_DestroySurface(instance, *surface, nullptr);
+    *surface = nullptr;
+    evoLog(PrintSeverity::Debug, "Destroyed window surface");
+}
+
+const char* const* platform::GetWindowInstanceExtensions(uint32_t* count) {
+    return SDL_Vulkan_GetInstanceExtensions(count);
+}
