@@ -41,17 +41,24 @@ add_requires("imgui v1.92.7-docking", {
 target("evolution_renderer")
     set_kind("static")
 
-    add_files("renderer/src/*.cpp")
-    add_files("renderer/src/platform/**.cpp")
+    add_files("renderer/src/renderer.cpp")
+    add_files("renderer/src/platform/platform_sdl3.cpp")
+    add_files("renderer/src/gfx/instance.cpp")
+    add_files("renderer/src/gfx/device.cpp")
+    add_files("renderer/src/gfx/vma.cpp")
+    add_files("renderer/src/gfx/swapchain.cpp")
+
     add_includedirs("renderer/src")
     add_includedirs("renderer/include", { public = true })
 
-    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
     add_defines("SDL_MAIN_HANDLED", "VK_NO_PROTOTYPES", { public = true })
+    add_defines("VMA_VULKAN_VERSION=1004000", { public = true })
+    add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", { public = true })
+    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
 
-    add_packages("volk", "vulkan-headers", "vulkan-memory-allocator", "slang", { public = true })
-    add_packages("tinyobjloader", "glm", "fmt", "stb", { public = true })
-    add_packages("libsdl3", "imgui", { public = true })
+    add_packages("volk", "vulkan-headers", "vulkan-memory-allocator", "slang")
+    add_packages("tinyobjloader", "glm", "fmt", "stb")
+    add_packages("libsdl3", "imgui")
 target_end()
 
 ------------------ sandbox ------------------

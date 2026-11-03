@@ -20,11 +20,11 @@ namespace platform {
         int default_height = 900;
     };
 
-    bool Init(const WindowDesc* description);
+    bool Init(const WindowDesc* desc);
     void PollEvents(Window* window);
     void Quit();
 
-    bool CreateWindow(Window* window, const WindowDesc* description);
+    bool CreateWindow(Window* window, const WindowDesc* desc);
     void ResizeWindow(Window* window);
     void DestroyWindow(Window* window);
     /*

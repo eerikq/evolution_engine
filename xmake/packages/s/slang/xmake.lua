@@ -1,3 +1,4 @@
+---@diagnostic disable
 -- Slang from the upstream prebuilt release rather than the xmake registry.
 --
 -- The registry lags a long way behind (it still offers nothing newer than
@@ -32,7 +33,7 @@ package("slang")
         add_versions("2026.14.1", "5ed0a59d650a0af0aca45d5db4e083b3d8fb5cea05748747dd95dfbe9c580658")
     end
 
-    on_install(function (package)
+    on_install( function (package)
         os.cp("include", package:installdir())
         os.cp("lib", package:installdir())
 
@@ -71,7 +72,7 @@ package("slang")
             -- The GLSL module is a runtime bundle rather than an API, but linking
             -- it is what keeps it loaded: without it Slang emits different
             -- SPIR-V, and it says so only in a startup log line.
-            package:set("links", {"slang-compiler", "slang-glsl-module-" .. package:version_str()})
+            package:set("links", { "slang-compiler", "slang-glsl-module-" .. package:version_str() })
         else
             package:set("links", "slang")
         end
@@ -80,7 +81,7 @@ package("slang")
     -- Just the header: has_cxxfuncs cannot express a namespaced function (it
     -- builds a snippet that pastes the qualified name into a declaration), and
     -- for a prebuilt drop the useful check is that the include dir resolves.
-    on_test(function (package)
-        assert(package:has_cxxincludes("slang.h", {configs = {languages = "c++17"}}))
+    on_test( function (package)
+        assert(package:has_cxxincludes("slang.h", { configs = { languages = "c++17" } }))
     end)
 package_end()

@@ -3,23 +3,33 @@
 #include <SDL3/SDL.h>
 #include <volk.h>
 
-VkResult swapchainCreate(
-    SDL_Window** sdl_window,
-    const VkPhysicalDevice physical_device,
-    const VkDevice logical_device,
-    const VkSurfaceKHR surface,
-    VkSwapchainKHR* swapchain,
-    VkExtent2D* swapchain_extent,
-    VkSurfaceFormatKHR* swapchain_surface_format
-);
-void swapchainDestroy(const VkDevice logical_device, VkSwapchainKHR* swapchain, VkImageView* swapchain_image_views, const uint32_t swapchain_image_views_count);
-void swapchainGetImages(const VkDevice logical_device, const VkSwapchainKHR swapchain, VkImage* swapchain_images, uint32_t* swapchain_images_count);
+namespace gfx {
+    struct Window;
 
-void swapchainCreateImageViews(
-    const VkDevice logical_device,
-    const VkFormat swapchain_surface_format,
-    const VkImage* swapchain_images,
-    const uint32_t swapchain_images_count,
-    VkImageView* swapchain_image_views
-);
-void swapchainDestroyImageViews(const VkDevice logical_device, VkImageView* swapchain_image_views, const uint32_t swapchain_image_views_count);
+    bool CreateSwapchain(
+        SDL_Window** sdl_window,
+        const VkSurfaceKHR surface,
+
+        const VkPhysicalDevice physical_device,
+        const VkDevice logical_device,
+        VkSwapchainKHR* swapchain,
+        VkExtent2D* swapchain_extent,
+        VkSurfaceFormatKHR* swapchain_surface_format
+    );
+    void DestroySwapchain(
+        const VkDevice logical_device,
+        VkSwapchainKHR* swapchain,
+        VkImageView* swapchain_image_views,
+        const uint32_t swapchain_image_views_count
+    );
+    void GetSwapchainImages(const VkDevice logical_device, const VkSwapchainKHR swapchain, VkImage* swapchain_images, uint32_t* swapchain_images_count);
+
+    void CreateSwapchainImageViews(
+        const VkDevice logical_device,
+        const VkFormat swapchain_surface_format,
+        const VkImage* swapchain_images,
+        const uint32_t swapchain_images_count,
+        VkImageView* swapchain_image_views
+    );
+    void DestroySwapchainImageViews(const VkDevice logical_device, VkImageView* swapchain_image_views, const uint32_t swapchain_image_views_count);
+} // namespace gfx

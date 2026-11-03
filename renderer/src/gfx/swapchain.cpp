@@ -1,7 +1,8 @@
+// /*
 #include "swapchain.h"
 
+#include "core/log.h"
 #include "platform/window.h"
-#include "util/log.h"
 
 #include <algorithm>
 #include <vector>
@@ -155,7 +156,6 @@ void swapchainDestroyImageViews(const VkDevice logical_device, VkImageView* swap
     }
 }
 
-/*
 void swapchainRecreate() {
     device.waitIdle();
 

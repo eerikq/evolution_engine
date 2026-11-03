@@ -9,18 +9,13 @@ typedef struct DeviceContext {
 
     uint32_t queue_index = VK_QUEUE_FAMILY_IGNORED;
 
-    // properties
-    VkPhysicalDeviceProperties2 device_properties {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-    };
-
     // features
-    VkPhysicalDeviceExtendedDynamicStateFeaturesEXT features_dynamic_state {
+    VkPhysicalDeviceExtendedDynamicStateFeaturesEXT features_dynamic {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT,
     };
     VkPhysicalDeviceVulkan13Features features_vulkan_13 {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
-        .pNext = &features_dynamic_state,
+        .pNext = &features_dynamic,
     };
     VkPhysicalDeviceVulkan11Features features_vulkan_11 {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
@@ -29,5 +24,10 @@ typedef struct DeviceContext {
     VkPhysicalDeviceFeatures2 device_features {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
         .pNext = &features_vulkan_11,
+    };
+
+    // properties
+    VkPhysicalDeviceProperties2 device_properties {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
     };
 } DeviceContext;

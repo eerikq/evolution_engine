@@ -5,7 +5,7 @@
 #include <cstring>
 #include <vector>
 
-static bool validateInstanceLayers(const uint32_t layers_count, const char* const* layers_names) {
+static bool ValidateInstanceLayers(const uint32_t layers_count, const char* const* layers_names) {
     uint32_t layer_property_count = 0;
     vkEnumerateInstanceLayerProperties(&layer_property_count, nullptr);
 
@@ -21,7 +21,7 @@ static bool validateInstanceLayers(const uint32_t layers_count, const char* cons
         }
 
         if (!found_layer) {
-            evoLog(PrintSeverity::Error, "Required layer not supported: {}", layers_names[i]);
+            evoLog(PrintSeverity::Fatal, "Required layer not supported: {}", layers_names[i]);
             return false;
         }
     }
@@ -29,7 +29,7 @@ static bool validateInstanceLayers(const uint32_t layers_count, const char* cons
     return true;
 }
 
-static bool validateInstanceExtensions(const uint32_t extensions_count, const char* const* extensions_names) {
+static bool ValidateInstanceExtensions(const uint32_t extensions_count, const char* const* extensions_names) {
     uint32_t extension_property_count = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extension_property_count, nullptr);
 
@@ -45,7 +45,7 @@ static bool validateInstanceExtensions(const uint32_t extensions_count, const ch
         }
 
         if (!found_extension) {
-            evoLog(PrintSeverity::Error, "Required extension not supported: {}", extensions_names[i]);
+            evoLog(PrintSeverity::Fatal, "Required extension not supported: {}", extensions_names[i]);
             return false;
         }
     }
@@ -67,13 +67,13 @@ bool gfx::CreateInstance(Instance* instance, const InstanceDesc* desc) {
     uint32_t validation_layers_count = desc->enable_validation_layers ? desc->validation_layers_count : 0;
     const char* const* validation_layers_names = desc->enable_validation_layers ? &desc->validation_layers : nullptr;
 
-    if (!validateInstanceLayers(validation_layers_count, validation_layers_names)) return VK_ERROR_LAYER_NOT_PRESENT;
+    if (!ValidateInstanceLayers(validation_layers_count, validation_layers_names)) return false;
 
     std::vector extensions(desc->extensions, desc->extensions + desc->extensions_count);
     if (desc->enable_validation_layers) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     // append "VK_EXT_DEBUG_UTILS_EXTENSION_NAME" to the end of extensions to enable validation layers
 
-    if (!validateInstanceExtensions((uint32_t)extensions.size(), extensions.data())) return VK_ERROR_EXTENSION_NOT_PRESENT;
+    if (!ValidateInstanceExtensions((uint32_t)extensions.size(), extensions.data())) return false;
 
     VkInstanceCreateInfo create_info {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -84,12 +84,18 @@ bool gfx::CreateInstance(Instance* instance, const InstanceDesc* desc) {
         .ppEnabledExtensionNames = extensions.data(),
     };
 
-    evoLog(PrintSeverity::Info, "Created Vulkan instance. Validation layers: {}", desc->enable_validation_layers ? "Enabled" : "Disabled");
-    return vkCreateInstance(&create_info, nullptr, &instance->instance);
+    if (vkCreateInstance(&create_info, nullptr, &instance->instance)) {
+        evoLog(PrintSeverity::Fatal, "Failed to create Vulkan instance");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Created Vulkan instance (Validation layers {})", desc->enable_validation_layers ? "Enabled" : "Disabled");
+    return true;
 }
 
-void vulkanDestroyInstance(VkInstance* instance) {
-    vkDestroyInstance(*instance, nullptr);
+void gfx::DestroyInstance(Instance* instance) {
+    vkDestroyInstance(instance->instance, nullptr);
+    evoLog(PrintSeverity::Debug, "Destroyed Vulkan instance");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -105,7 +111,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 bool gfx::CreateDebugMessenger(Instance* instance) {
     // redundant check? if this ever runs, its because validation layers ARE enabled.
     // commenting out to keep just in case.
-    // if (!EngineConfig::enable_validation_layers) {
+    // if (EngineConfig::enable_validation_layers) {
     //     evoLog(PrintSeverity::Warn, "Validation layers are disabled! Debug messenger will not be created");
     //     return VK_SUCCESS;
     // }
@@ -120,10 +126,16 @@ bool gfx::CreateDebugMessenger(Instance* instance) {
         .pfnUserCallback = &debugCallback,
     };
 
-    evoLog(PrintSeverity::Info, "Created debug messenger");
-    return vkCreateDebugUtilsMessengerEXT(instance->instance, &create_info, nullptr, &instance->debug_messenger);
+    if (vkCreateDebugUtilsMessengerEXT(instance->instance, &create_info, nullptr, &instance->debug_messenger)) {
+        evoLog(PrintSeverity::Error, "Failed to create Vulkan debug messenger");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Created Vulkan debug messenger");
+    return true;
 }
 
 void gfx::DestroyDebugMessenger(Instance* instance) {
     vkDestroyDebugUtilsMessengerEXT(instance->instance, instance->debug_messenger, nullptr);
+    evoLog(PrintSeverity::Debug, "Destroyed Vulkan debug messenger");
 }
