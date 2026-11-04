@@ -1,35 +1,45 @@
 #pragma once
 
-#include <SDL3/SDL.h>
+// #include <SDL3/SDL.h>
 #include <volk.h>
 
-namespace gfx {
+#define MAX_FRAMES_IN_FLIGHT 2
+
+namespace platform {
     struct Window;
+}
 
-    bool CreateSwapchain(
-        SDL_Window** sdl_window,
-        const VkSurfaceKHR surface,
+namespace gfx {
+    struct Device;
 
-        const VkPhysicalDevice physical_device,
-        const VkDevice logical_device,
-        VkSwapchainKHR* swapchain,
-        VkExtent2D* swapchain_extent,
-        VkSurfaceFormatKHR* swapchain_surface_format
-    );
-    void DestroySwapchain(
-        const VkDevice logical_device,
-        VkSwapchainKHR* swapchain,
-        VkImageView* swapchain_image_views,
-        const uint32_t swapchain_image_views_count
-    );
-    void GetSwapchainImages(const VkDevice logical_device, const VkSwapchainKHR swapchain, VkImage* swapchain_images, uint32_t* swapchain_images_count);
+    struct Swapchain {
+        uint32_t image_count = 2;
 
-    void CreateSwapchainImageViews(
-        const VkDevice logical_device,
-        const VkFormat swapchain_surface_format,
-        const VkImage* swapchain_images,
-        const uint32_t swapchain_images_count,
-        VkImageView* swapchain_image_views
-    );
-    void DestroySwapchainImageViews(const VkDevice logical_device, VkImageView* swapchain_image_views, const uint32_t swapchain_image_views_count);
+        VkSwapchainKHR swapchain = nullptr;
+        VkSurfaceFormatKHR surface_format = {};
+        VkExtent2D extent = {};
+
+        VkImage images[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkImageView image_views[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+
+        // ↓↓↓ unclear if they belong here
+        VkSemaphore present_complete_semaphores[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkSemaphore render_finished_semaphores[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+    };
+
+    struct SwapchainDesc {
+        uint32_t image_count = 2;
+        VkFormat desired_format = VK_FORMAT_B8G8R8A8_SRGB;
+        VkColorSpaceKHR desired_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        VkPresentModeKHR desired_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+    };
+
+    bool CreateSwapchain(Swapchain* swapchain, const SwapchainDesc* desc, const platform::Window* window, const Device* device, const VkSurfaceKHR surface);
+    void DestroySwapchain(Swapchain* swapchain, const VkDevice logical_device);
+
+    bool GetSwapchainImages(Swapchain* swapchain, const VkDevice logical_device);
+
+    bool CreateSwapchainImageViews(Swapchain* swapchain, const VkDevice logical_device);
+    void DestroySwapchainImageViews(Swapchain* swapchain, const VkDevice logical_device);
 } // namespace gfx

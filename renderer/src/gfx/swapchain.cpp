@@ -1,35 +1,37 @@
-// /*
 #include "swapchain.h"
 
 #include "core/log.h"
-#include "platform/window.h"
+#include "evo/platform.h"
+#include "gfx/device.h"
 
 #include <algorithm>
 #include <vector>
 
-static VkExtent2D chooseSwapExtent(SDL_Window** sdl_window, const VkSurfaceCapabilitiesKHR capabilities) {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) return capabilities.currentExtent;
+static uint32_t ChooseSwapMinImageCount(const VkSurfaceCapabilitiesKHR* capabilities, const uint32_t frames_in_flight) {
+    uint32_t minImageCount = std::max<uint32_t>(frames_in_flight, capabilities->minImageCount);
 
-    int width, height;
-    window::GetSizeInPixels(sdl_window, &width, &height);
-
-    return {
-        std::clamp(static_cast<uint32_t>(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
-        std::clamp(static_cast<uint32_t>(height), capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
-    };
-}
-
-static uint32_t chooseSwapMinImageCount(const VkSurfaceCapabilitiesKHR surfaceCapabilities) {
-    uint32_t minImageCount = std::max<uint32_t>(3, surfaceCapabilities.minImageCount);
-
-    if ((0 < surfaceCapabilities.maxImageCount) && (surfaceCapabilities.maxImageCount < minImageCount)) minImageCount = surfaceCapabilities.maxImageCount;
+    if ((0 < capabilities->maxImageCount) && (capabilities->maxImageCount < minImageCount)) minImageCount = capabilities->maxImageCount;
 
     return minImageCount;
 }
 
-static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* available_formats, const uint32_t available_formats_count) {
+static VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR* capabilities, const uint32_t width, const uint32_t height) {
+    if (capabilities->currentExtent.width != UINT32_MAX) return capabilities->currentExtent;
+
+    return {
+        std::clamp(width, capabilities->minImageExtent.width, capabilities->maxImageExtent.width),
+        std::clamp(height, capabilities->minImageExtent.height, capabilities->maxImageExtent.height)
+    };
+}
+
+static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(
+    const VkSurfaceFormatKHR* available_formats,
+    const uint32_t available_formats_count,
+    const VkFormat desired_format,
+    const VkColorSpaceKHR desired_color_space
+) {
     for (uint32_t i = 0; i < available_formats_count; i++) {
-        if (available_formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        if (available_formats[i].format == desired_format && available_formats[i].colorSpace == desired_color_space) {
             return available_formats[i];
         }
     }
@@ -37,55 +39,51 @@ static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* avai
     return available_formats[0];
 }
 
-static VkPresentModeKHR chooseSwapPresentMode(const VkPresentModeKHR* available_present_modes, const uint32_t available_present_modes_count) {
+static VkPresentModeKHR ChooseSwapPresentMode(
+    const VkPresentModeKHR* available_present_modes,
+    const uint32_t available_present_modes_count,
+    const VkPresentModeKHR desired_present_mode
+) {
     for (uint32_t i = 0; i < available_present_modes_count; i++) {
-        if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-            return VK_PRESENT_MODE_MAILBOX_KHR;
+        if (available_present_modes[i] == desired_present_mode) {
+            return desired_present_mode;
         }
     }
 
-    return VK_PRESENT_MODE_FIFO_KHR;
+    return VK_PRESENT_MODE_FIFO_KHR; // fallback to FIFO since its guranteed to be supported on anything that can run Vulkan.
 }
 
-VkResult swapchainCreate(
-    SDL_Window** sdl_window,
-    const VkPhysicalDevice physical_device,
-    const VkDevice logical_device,
-    const VkSurfaceKHR surface,
-    VkSwapchainKHR* swapchain,
-    VkExtent2D* swapchain_extent,
-    VkSurfaceFormatKHR* swapchain_surface_format
-) {
+bool gfx::CreateSwapchain(Swapchain* swapchain, const SwapchainDesc* desc, const platform::Window* window, const Device* device, const VkSurfaceKHR surface) {
     // swapchain min image count & extent
     VkSurfaceCapabilitiesKHR surface_capabilities {};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physical, surface, &surface_capabilities);
 
-    uint32_t min_image_count = chooseSwapMinImageCount(surface_capabilities);
-    *swapchain_extent = chooseSwapExtent(sdl_window, surface_capabilities);
+    uint32_t min_image_count = ChooseSwapMinImageCount(&surface_capabilities, desc->image_count);
+    swapchain->extent = ChooseSwapExtent(&surface_capabilities, window->width, window->height);
 
     // swapchain surface format
     uint32_t surface_formats_count = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_formats_count, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device->physical, surface, &surface_formats_count, nullptr);
     std::vector<VkSurfaceFormatKHR> surface_formats(surface_formats_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_formats_count, surface_formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device->physical, surface, &surface_formats_count, surface_formats.data());
 
-    *swapchain_surface_format = chooseSwapSurfaceFormat(surface_formats.data(), surface_formats.size());
+    swapchain->surface_format = ChooseSwapSurfaceFormat(surface_formats.data(), surface_formats.size(), desc->desired_format, desc->desired_color_space);
 
     // swapchain present mode
     uint32_t present_modes_count = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device->physical, surface, &present_modes_count, nullptr);
     std::vector<VkPresentModeKHR> present_modes(present_modes_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, present_modes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device->physical, surface, &present_modes_count, present_modes.data());
 
-    VkPresentModeKHR present_mode = chooseSwapPresentMode(present_modes.data(), present_modes.size());
+    VkPresentModeKHR present_mode = ChooseSwapPresentMode(present_modes.data(), present_modes.size(), desc->desired_present_mode);
 
     VkSwapchainCreateInfoKHR swapchain_create_info {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = surface,
         .minImageCount = min_image_count,
-        .imageFormat = swapchain_surface_format->format,
-        .imageColorSpace = swapchain_surface_format->colorSpace,
-        .imageExtent = *swapchain_extent,
+        .imageFormat = swapchain->surface_format.format,
+        .imageColorSpace = swapchain->surface_format.colorSpace,
+        .imageExtent = swapchain->extent,
         .imageArrayLayers = 1,
         .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -95,36 +93,38 @@ VkResult swapchainCreate(
         .clipped = VK_TRUE
     };
 
-    return vkCreateSwapchainKHR(logical_device, &swapchain_create_info, nullptr, swapchain);
+    if (vkCreateSwapchainKHR(device->logical, &swapchain_create_info, nullptr, &swapchain->swapchain)) {
+        evoLog(PrintSeverity::Fatal, "Failed creating swapchain");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Created swapchain");
+    return true;
 }
 
-void swapchainDestroy(
-    const VkDevice logical_device,
-    VkSwapchainKHR* swapchain,
-    VkImageView* swapchain_image_views,
-    const uint32_t swapchain_image_views_count
-) {
-    swapchainDestroyImageViews(logical_device, swapchain_image_views, swapchain_image_views_count);
+void gfx::DestroySwapchain(Swapchain* swapchain, const VkDevice logical_device) {
+    gfx::DestroySwapchainImageViews(swapchain, logical_device);
 
-    vkDestroySwapchainKHR(logical_device, *swapchain, nullptr);
-    *swapchain = VK_NULL_HANDLE;
+    // swapchain images are held within the swapchain object, meaning they dont need to be manually deleted.
+    vkDestroySwapchainKHR(logical_device, swapchain->swapchain, nullptr);
+    swapchain->swapchain = nullptr;
 }
 
-void swapchainGetImages(const VkDevice logical_device, const VkSwapchainKHR swapchain, VkImage* swapchain_images, uint32_t* swapchain_images_count) {
-    vkGetSwapchainImagesKHR(logical_device, swapchain, swapchain_images_count, swapchain_images);
+bool gfx::GetSwapchainImages(Swapchain* swapchain, const VkDevice logical_device) {
+    if (vkGetSwapchainImagesKHR(logical_device, swapchain->swapchain, &swapchain->image_count, swapchain->images)) {
+        evoLog(PrintSeverity::Fatal, "Failed to retrieve images from the swapchain");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Retrieved images from the swapchain");
+    return true;
 }
 
-void swapchainCreateImageViews(
-    const VkDevice logical_device,
-    const VkFormat swapchain_surface_format,
-    const VkImage* swapchain_images,
-    const uint32_t swapchain_images_count,
-    VkImageView* swapchain_image_views
-) {
+bool gfx::CreateSwapchainImageViews(Swapchain* swapchain, const VkDevice logical_device) {
     VkImageViewCreateInfo image_view_create_info {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = swapchain_surface_format,
+        .format = swapchain->surface_format.format,
         .components =
             {
                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -141,26 +141,30 @@ void swapchainCreateImageViews(
         },
     };
 
-    for (uint32_t i = 0; i < swapchain_images_count; i++) {
-        image_view_create_info.image = swapchain_images[i];
-        vkCreateImageView(logical_device, &image_view_create_info, nullptr, &(swapchain_image_views[i]));
+    for (uint32_t i = 0; i < swapchain->image_count; i++) {
+        image_view_create_info.image = swapchain->images[i];
+        if (vkCreateImageView(logical_device, &image_view_create_info, nullptr, &(swapchain->image_views[i]))) {
+            evoLog(PrintSeverity::Fatal, "Failed to create image view {}/{}", i, swapchain->image_count);
+            return false;
+        }
     }
 
     evoLog(PrintSeverity::Info, "Created swapchain image views");
+    return true;
 }
 
-void swapchainDestroyImageViews(const VkDevice logical_device, VkImageView* swapchain_image_views, const uint32_t swapchain_image_views_count) {
-    for (uint32_t i = 0; i < swapchain_image_views_count; i++) {
-        vkDestroyImageView(logical_device, swapchain_image_views[i], nullptr);
-        swapchain_image_views[i] = VK_NULL_HANDLE;
+void gfx::DestroySwapchainImageViews(Swapchain* swapchain, const VkDevice logical_device) {
+    for (uint32_t i = 0; i < swapchain->image_count; i++) {
+        vkDestroyImageView(logical_device, swapchain->image_views[i], nullptr);
+        swapchain->image_views[i] = nullptr;
     }
 }
 
-void swapchainRecreate() {
-    device.waitIdle();
+// not the swapchain.cpp's job anymore
+// void swapchainRecreate() {
+//     device.waitIdle();
 
-    cleanup_swap_chain();
-    create_swap_chain();
-    create_image_views();
-}
-*/
+//     cleanup_swap_chain();
+//     create_swap_chain();
+//     create_image_views();
+// }
