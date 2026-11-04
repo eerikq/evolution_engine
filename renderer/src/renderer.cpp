@@ -1,5 +1,6 @@
 #include "gfx/device.h"
 #include "gfx/instance.h"
+#include "gfx/swapchain.h"
 #include "gfx/vma.h"
 #include "platform/platform_sdl3_vulkan.h"
 
@@ -9,6 +10,7 @@
 struct renderer::Renderer {
     gfx::Instance instance;
     gfx::Device device;
+    gfx::Swapchain swapchain;
 
     VkSurfaceKHR surface; // ← will probably be part of another struct.
     // or maybe not! surface is weird and doesnt *quite* have a well defined place it belongs to.
@@ -50,12 +52,25 @@ bool renderer::Create(Renderer* resources, const RendererDesc* desc, platform::W
 
     gfx::CreateAllocator(&renderer_resources.device, renderer_resources.instance.instance);
 
+    gfx::SwapchainDesc swapchain_desc = {
+        .image_count = 2,
+        .desired_format = VK_FORMAT_B8G8R8A8_SRGB,
+        .desired_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+        .desired_present_mode = VK_PRESENT_MODE_MAILBOX_KHR,
+    };
+    gfx::CreateSwapchain(&renderer_resources.swapchain, &swapchain_desc, window, &renderer_resources.device, renderer_resources.surface);
+    gfx::GetSwapchainImages(&renderer_resources.swapchain, renderer_resources.device.logical);
+    gfx::CreateSwapchainImageViews(&renderer_resources.swapchain, renderer_resources.device.logical);
+
     return true;
 }
 void renderer::DrawFrame() {
     //
 }
 void renderer::Destroy(Renderer* resources, const RendererDesc* desc, platform::Window* window) {
+    gfx::DestroySwapchainImageViews(&renderer_resources.swapchain, renderer_resources.device.logical);
+    gfx::DestroySwapchain(&renderer_resources.swapchain, renderer_resources.device.logical);
+
     gfx::DestroyAllocator(&renderer_resources.device);
 
     gfx::DestroyLogicalDevice(&renderer_resources.device);
