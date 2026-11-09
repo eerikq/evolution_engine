@@ -1,6 +1,5 @@
 #pragma once
 
-// #include <SDL3/SDL.h>
 #include <volk.h>
 
 #define MAX_FRAMES_IN_FLIGHT 2
@@ -12,8 +11,15 @@ namespace platform {
 namespace gfx {
     struct Device;
 
-    struct Swapchain {
+    struct SwapchainDesc {
         uint32_t image_count = 2;
+        VkFormat desired_format = VK_FORMAT_B8G8R8A8_SRGB;
+        VkColorSpaceKHR desired_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        VkPresentModeKHR desired_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+    };
+
+    struct Swapchain {
+        SwapchainDesc desc = {};
 
         VkSwapchainKHR swapchain = nullptr;
         VkSurfaceFormatKHR surface_format = {};
@@ -28,14 +34,7 @@ namespace gfx {
         VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT] = {nullptr};
     };
 
-    struct SwapchainDesc {
-        uint32_t image_count = 2;
-        VkFormat desired_format = VK_FORMAT_B8G8R8A8_SRGB;
-        VkColorSpaceKHR desired_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-        VkPresentModeKHR desired_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-    };
-
-    bool CreateSwapchain(Swapchain* swapchain, const SwapchainDesc* desc, const platform::Window* window, const Device* device, const VkSurfaceKHR surface);
+    bool CreateSwapchain(Swapchain* swapchain, const platform::Window* window, const Device* device, const VkSurfaceKHR surface);
     void DestroySwapchain(Swapchain* swapchain, const VkDevice logical_device);
 
     bool GetSwapchainImages(Swapchain* swapchain, const VkDevice logical_device);

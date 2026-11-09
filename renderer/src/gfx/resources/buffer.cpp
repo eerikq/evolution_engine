@@ -1,16 +1,10 @@
 #include "buffer.h"
 
+#include "core/log.h"
 #include "types/vertex.h"
-#include "util/log.h"
 
 namespace buffer {
-    VkResult Create(
-        const VkDeviceSize size,
-        const VkBufferUsageFlags buffer_flags,
-        const VmaAllocationCreateFlags allocation_flags,
-        const VmaAllocator allocator,
-        Buffer* buffer
-    ) {
+    VkResult Create(const VkDeviceSize size, const VkBufferUsageFlags buffer_flags, const VmaAllocationCreateFlags allocation_flags, const VmaAllocator allocator, Buffer* buffer) {
         VkBufferCreateInfo buffer_info {
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = size,
@@ -32,12 +26,7 @@ namespace buffer {
     }
 
     VkResult CopyFromBuffer(
-        const VkQueue graphics_queue,
-        const VkCommandPool command_pool,
-        const VkDevice logical_device,
-        const Buffer source,
-        const Buffer destination,
-        const VkDeviceSize size
+        const VkQueue graphics_queue, const VkCommandPool command_pool, const VkDevice logical_device, const Buffer source, const Buffer destination, const VkDeviceSize size
     ) {
         VkCommandBufferAllocateInfo command_buffer_create_info {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -74,18 +63,11 @@ namespace buffer {
     }
 
     VkResult Write(
-        const VmaAllocator allocator,
-        const VkQueue graphics_queue,
-        const VkCommandPool command_pool,
-        const VkDevice logical_device,
-        const VkDeviceSize data_size,
-        const void* data,
+        const VmaAllocator allocator, const VkQueue graphics_queue, const VkCommandPool command_pool, const VkDevice logical_device, const VkDeviceSize data_size, const void* data,
         Buffer* buffer
     ) {
         Buffer staging_buffer;
-        VkResult result = Create(
-            data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, allocator, &staging_buffer
-        );
+        VkResult result = Create(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, allocator, &staging_buffer);
 
         if (result != VK_SUCCESS) {
             evoLog(PrintSeverity::Error, "{Couldn't create staging buffer}");

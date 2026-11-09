@@ -89,7 +89,7 @@ bool gfx::CreateInstance(Instance* instance, const InstanceDesc* desc) {
         return false;
     }
 
-    evoLog(PrintSeverity::Info, "Created Vulkan instance (Validation layers {})", desc->enable_validation_layers ? "Enabled" : "Disabled");
+    evoLog(PrintSeverity::Info, "Created Vulkan instance. Validation layers {}", desc->enable_validation_layers ? "Enabled" : "Disabled");
     return true;
 }
 
@@ -98,24 +98,13 @@ void gfx::DestroyInstance(Instance* instance) {
     evoLog(PrintSeverity::Debug, "Destroyed Vulkan instance");
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-    VkDebugUtilsMessageTypeFlagsEXT type,
-    const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
-    void* p_user_data
-) {
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data, void* p_user_data) {
     evoLog(PrintSeverity::Warn, "[{}] {}", type, p_callback_data->pMessage);
     return VK_FALSE;
 }
 
 bool gfx::CreateDebugMessenger(Instance* instance) {
-    // redundant check? if this ever runs, its because validation layers ARE enabled.
-    // commenting out to keep just in case.
-    // if (EngineConfig::enable_validation_layers) {
-    //     evoLog(PrintSeverity::Warn, "Validation layers are disabled! Debug messenger will not be created");
-    //     return VK_SUCCESS;
-    // }
-
     VkDebugUtilsMessageSeverityFlagsEXT severity_flags = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     VkDebugUtilsMessageTypeFlagsEXT message_type_flags = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
                                                          VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
@@ -131,7 +120,7 @@ bool gfx::CreateDebugMessenger(Instance* instance) {
         return false;
     }
 
-    evoLog(PrintSeverity::Info, "Created Vulkan debug messenger");
+    evoLog(PrintSeverity::Debug, "Created Vulkan debug messenger");
     return true;
 }
 

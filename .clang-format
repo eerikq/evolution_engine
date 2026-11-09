@@ -21,7 +21,7 @@ Standard: c++20
 BasedOnStyle: LLVM
 
 # Layout
-ColumnLimit: 160
+ColumnLimit: 192
 IndentWidth: 4
 PenaltyBreakAssignment: 2048
 UseTab: Never
@@ -53,8 +53,8 @@ BraceWrapping:
 PointerAlignment: Left
 DerivePointerAlignment: false
 AlignAfterOpenBracket: BlockIndent
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: "None"
+AlignConsecutiveDeclarations: "None"
 
 # Spaces
 SpaceAfterCStyleCast: false
@@ -63,14 +63,15 @@ SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
 
 # Includes
-SortIncludes: true
+SortIncludes:
+  Enabled: true
+  IgnoreCase: false
 IncludeBlocks: Regroup
 
 # Misc
 AllowAllParametersOfDeclarationOnNextLine: false
 Cpp11BracedListStyle: true
 SpaceBeforeCpp11BracedList: true
-BinPackParameters: false
 AlwaysBreakTemplateDeclarations: Yes
 IndentCaseLabels: true
 NamespaceIndentation: All

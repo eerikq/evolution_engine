@@ -5,7 +5,6 @@ namespace platform {
 } // namespace platform
 
 namespace renderer {
-    struct Renderer;
     struct RendererDesc {
         int max_frames_in_flight = 2;
 #ifdef NDEBUG
@@ -21,7 +20,10 @@ namespace renderer {
         };
     };
 
-    bool Create(Renderer* resources, const RendererDesc* desc, platform::Window* window);
+    struct Renderer;
+
+    bool Create(Renderer* resources, platform::Window* window);
     void DrawFrame();
-    void Destroy(Renderer* resources, const RendererDesc* desc, platform::Window* window);
+    bool Resize(Renderer* resources, platform::Window* window);
+    void Destroy(Renderer* resources, platform::Window* window);
 }; // namespace renderer

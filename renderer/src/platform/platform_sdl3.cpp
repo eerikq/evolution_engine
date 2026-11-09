@@ -49,7 +49,6 @@ bool platform::CreateWindow(Window* window, const WindowDesc* description) {
 
 void platform::ResizeWindow(Window* window) {
     SDL_GetWindowSizeInPixels(window->window, &window->width, &window->height);
-    window->was_resized = false;
     evoLog(PrintSeverity::Debug, "Resized Window. New dimensions: {}x{}", window->width, window->height);
 }
 
