@@ -1,61 +1,60 @@
 #include "command.h"
 
-#include "engine_config.h"
+#include "core/log.h"
+#include "gfx/device.h"
 
-#include <vector>
-
-const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
-
-VkResult commandCreatePool(const VkDevice logical_device, const uint32_t queue_index, VkCommandPool* command_pool) {
+bool gfx::CreateCommandPool(const Device* device, Command* command) {
     VkCommandPoolCreateInfo create_info {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = queue_index,
+        .queueFamilyIndex = device->queue_family_index,
     };
 
-    return vkCreateCommandPool(logical_device, &create_info, nullptr, command_pool);
+    if (vkCreateCommandPool(device->logical, &create_info, nullptr, &command->pool)) {
+        evoLog(PrintSeverity::Fatal, "Failed to create command pool");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Created command pool");
+    return true;
 }
 
-void commandDestroyPool(const VkDevice logical_device, VkCommandPool* command_pool) {
-    vkDestroyCommandPool(logical_device, *command_pool, nullptr);
-    command_pool = VK_NULL_HANDLE;
+void gfx::DestroyCommandPool(const Device* device, Command* command) {
+    vkDestroyCommandPool(device->logical, command->pool, nullptr);
+    command->pool = nullptr;
+
+    evoLog(PrintSeverity::Debug, "Destroyed command pool");
 }
 
-VkResult commandAllocateBuffers(const VkDevice logical_device, const VkCommandPool command_pool, VkCommandBuffer* command_buffers) {
+bool gfx::AllocateCommandBuffers(const Device* device, Command* command) {
     VkCommandBufferAllocateInfo create_info {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = command_pool,
+        .commandPool = command->pool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = EngineConfig::max_frames_in_flight,
+        .commandBufferCount = command->desc.buffer_count,
     };
 
-    return vkAllocateCommandBuffers(logical_device, &create_info, command_buffers);
+    if (vkAllocateCommandBuffers(device->logical, &create_info, command->buffers)) {
+        evoLog(PrintSeverity::Fatal, "Failed to allocate command buffers");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Allocated command buffers");
+    return true;
 }
 
-void commandFreeBuffers(
-    const VkDevice logical_device,
-    const VkCommandPool command_pool,
-    VkCommandBuffer* command_buffers,
-    const uint32_t command_buffers_count
-) {
-    vkFreeCommandBuffers(logical_device, command_pool, command_buffers_count, command_buffers);
-    for (uint32_t i = 0; i < command_buffers_count; i++) {
-        command_buffers[i] = VK_NULL_HANDLE;
+void gfx::FreeCommandBuffers(const Device* device, Command* command) {
+    vkFreeCommandBuffers(device->logical, command->pool, command->desc.buffer_count, command->buffers);
+    for (uint32_t i = 0; i < command->desc.buffer_count; i++) {
+        command->buffers[i] = nullptr;
     }
 }
 
+// rest is getting removed probably
+/*
 static void transition_image_layout(
-    const VkCommandBuffer* command_buffers,
-    const VkImage* swapchain_images,
-    const uint32_t frame_index,
-    const uint32_t image_index,
-    VkImageLayout old_layout,
-    VkImageLayout new_layout,
-    VkAccessFlags2 src_access_mask,
-    VkAccessFlags2 dst_access_mask,
-    VkPipelineStageFlags2 src_stage_mask,
-    VkPipelineStageFlags2 dst_stage_mask,
-    VkImageAspectFlags aspect_flags
+    const VkCommandBuffer* command_buffers, const VkImage* swapchain_images, const uint32_t frame_index, const uint32_t image_index, VkImageLayout old_layout, VkImageLayout new_layout,
+    VkAccessFlags2 src_access_mask, VkAccessFlags2 dst_access_mask, VkPipelineStageFlags2 src_stage_mask, VkPipelineStageFlags2 dst_stage_mask, VkImageAspectFlags aspect_flags
 ) {
     VkImageMemoryBarrier2 barrier {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -87,20 +86,9 @@ static void transition_image_layout(
 }
 
 void commandRecordBuffer(
-    const uint32_t frame_index,
-    const uint32_t image_index,
-    const VkCommandBuffer* command_buffers,
-    const VkImage* swapchain_images,
-    const VkImageView* swapchain_image_views,
-    const VkImage* depth_image,
-    const VkImageView* depth_image_view,
-    const VkPipeline graphics_pipeline,
-    const VkPipelineLayout pipeline_layout,
-    const VkDescriptorSet* descriptor_sets,
-    const VkExtent2D swapchain_extent,
-    const VkBuffer* vertex_buffer,
-    const VkBuffer* index_buffer,
-    const uint32_t index_buffer_size
+    const uint32_t frame_index, const uint32_t image_index, const VkCommandBuffer* command_buffers, const VkImage* swapchain_images, const VkImageView* swapchain_image_views,
+    const VkImage* depth_image, const VkImageView* depth_image_view, const VkPipeline graphics_pipeline, const VkPipelineLayout pipeline_layout, const VkDescriptorSet* descriptor_sets,
+    const VkExtent2D swapchain_extent, const VkBuffer* vertex_buffer, const VkBuffer* index_buffer, const uint32_t index_buffer_size
 ) {
     VkCommandBuffer command_buffer = command_buffers[frame_index];
 
@@ -110,15 +98,13 @@ void commandRecordBuffer(
     vkBeginCommandBuffer(command_buffer, &begin_info);
 
     transition_image_layout(
-        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, {},
-        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT
+        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, {}, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_ASPECT_COLOR_BIT
     );
 
     transition_image_layout(
-        command_buffers, depth_image, frame_index, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+        command_buffers, depth_image, frame_index, 0, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
         VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_IMAGE_ASPECT_DEPTH_BIT
     );
 
@@ -160,15 +146,13 @@ void commandRecordBuffer(
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
     transition_image_layout(
-        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, {}, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT
+        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, {},
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT
     );
 
     transition_image_layout(
-        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, {}, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT
+        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, {},
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT
     );
 
     VkViewport viewport = VkViewport(0.0f, 0.0f, static_cast<float>(swapchain_extent.width), static_cast<float>(swapchain_extent.height), 0.0f, 1.0f);
@@ -186,8 +170,8 @@ void commandRecordBuffer(
     vkCmdEndRendering(command_buffer);
 
     transition_image_layout(
-        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, {}, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT
+        command_buffers, swapchain_images, frame_index, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, {},
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT
     );
 }
+ */

@@ -1,113 +1,141 @@
 #include "texture.h"
 
-#include "renderer/resources/buffer.h"
-#include "util/log.h"
+#include "core/log.h"
 
-namespace texture {
-    void TransitionImageLayout(
-        const VkCommandBuffer command_buffer,
-        const VkImage image,
-        VkPipelineStageFlags2 src_stage_mask,
-        VkPipelineStageFlags2 dst_stage_mask,
-        VkAccessFlags2 src_access_mask,
-        VkAccessFlags2 dst_access_mask,
-        VkImageLayout old_layout,
-        VkImageLayout new_layout
-    ) {
-        VkImageMemoryBarrier2 barrier {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            // .srcStageMask = src_stage_mask,
-            // .srcAccessMask = src_access_mask,
-            // .dstStageMask = dst_stage_mask,
-            // .dstAccessMask = dst_access_mask,
-            .oldLayout = old_layout,
-            .newLayout = new_layout,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = image,
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            }
-        };
+bool gfx::CreateTexture(const VkDevice logical_device, const VmaAllocator allocator, const TextureDesc* desc, Texture* texture) {
+    VkImageCreateInfo create_info {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = desc->format,
+        .extent = {desc->width, desc->height, 1},
+        .mipLevels = 1,
+        .arrayLayers = 1,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .tiling = VK_IMAGE_TILING_OPTIMAL,
+        .usage = desc->usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
 
-        VkPipelineStageFlags source_stage;
-        VkPipelineStageFlags destination_stage;
+    VmaAllocationCreateInfo allocation_info {
+        .flags = desc->allocation_flags,
+        .usage = VMA_MEMORY_USAGE_AUTO,
+    };
 
-        if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    if (vmaCreateImage(allocator, &create_info, &allocation_info, &texture->data, &texture->allocation, nullptr)) {
+        evoLog(PrintSeverity::Error, "Failed to create texture");
+        return false;
+    }
 
-            source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    evoLog(PrintSeverity::Debug, "Created texture");
+    return false;
+}
 
-            source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else {
-            throw std::invalid_argument("unsupported layout transition!");
+void gfx::DestroyTexture(const VkDevice logical_device, const VmaAllocator allocator, Texture* texture) {
+    if (texture->view != nullptr) {
+        vkDestroyImageView(logical_device, texture->view, nullptr);
+        texture->view = nullptr;
+    }
+
+    vmaDestroyImage(allocator, texture->data, texture->allocation);
+    texture->data = nullptr;
+    texture->allocation = nullptr;
+}
+
+bool gfx::CreateTextureView(const VkDevice logical_device, const VkFormat texture_format, const VkImageAspectFlags aspect_flags, Texture* texture) {
+    VkImageViewCreateInfo view_create_info {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = texture->data,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = texture_format,
+        .components =
+            {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            },
+        .subresourceRange = {
+            .aspectMask = aspect_flags,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
+
+    if (vkCreateImageView(logical_device, &view_create_info, nullptr, &texture->view)) {
+        evoLog(PrintSeverity::Error, "Failed to create texture view");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Debug, "Created texture view");
+    return true;
+}
+
+void gfx::DestroyTextureView(const VkDevice logical_device, Texture* texture) {
+    vkDestroyImageView(logical_device, texture->view, nullptr);
+}
+
+// this probably needs to move out of here
+void gfx::TransitionImageLayout(
+    const VkCommandBuffer command_buffer, const VkImage image, VkPipelineStageFlags2 src_stage_mask, VkPipelineStageFlags2 dst_stage_mask, VkAccessFlags2 src_access_mask,
+    VkAccessFlags2 dst_access_mask, VkImageLayout old_layout, VkImageLayout new_layout
+) {
+    VkImageMemoryBarrier2 barrier {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        // .srcStageMask = src_stage_mask,
+        // .srcAccessMask = src_access_mask,
+        // .dstStageMask = dst_stage_mask,
+        // .dstAccessMask = dst_access_mask,
+        .oldLayout = old_layout,
+        .newLayout = new_layout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
         }
+    };
 
-        VkDependencyInfo dependency_info = {
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .dependencyFlags = 0,
-            .imageMemoryBarrierCount = 1,
-            .pImageMemoryBarriers = &barrier,
-        };
+    VkPipelineStageFlags source_stage;
+    VkPipelineStageFlags destination_stage;
 
-        vkCmdPipelineBarrier2(command_buffer, &dependency_info);
+    if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else {
+        throw std::invalid_argument("unsupported layout transition!");
     }
 
-    VkResult Create(
-        const VkDevice logical_device,
-        const VkFormat format,
-        const VkImageUsageFlags usage,
-        const uint32_t width,
-        const uint32_t height,
-        const VmaAllocator allocator,
-        const VmaAllocationCreateFlags allocation_flags,
-        Texture* texture
-    ) {
-        VkImageCreateInfo create_info {
-            .sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType = VkImageType::VK_IMAGE_TYPE_2D,
-            .format = format,
-            .extent = { width, height, 1 },
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .tiling = VK_IMAGE_TILING_OPTIMAL,
-            .usage = usage,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        };
+    VkDependencyInfo dependency_info = {
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .dependencyFlags = 0,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &barrier,
+    };
 
-        VmaAllocationCreateInfo allocation_info {
-            .flags = allocation_flags,
-            .usage = VMA_MEMORY_USAGE_AUTO,
-        };
+    vkCmdPipelineBarrier2(command_buffer, &dependency_info);
+}
 
-        return vmaCreateImage(allocator, &create_info, &allocation_info, &texture->data, &texture->allocation, nullptr);
-    }
-
-    VkResult CreateFromImage(
-        const VkDevice logical_device,
-        const VmaAllocator allocator,
-        const VmaAllocationCreateFlags allocation_flags,
-        const Image* image,
-        Texture* texture
-    ) {
-        VkFormat format;
-        if (image->channels == 4) {
-            format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
-        } else {
-            evoLog(PrintSeverity::Error, "Image has {} channels, need 4.", image->channels);
-            return VK_ERROR_FORMAT_NOT_SUPPORTED;
+/*
+    bool gfx::CreateTextureFromImage(const VkDevice logical_device, const VmaAllocator allocator, const VmaAllocationCreateFlags allocation_flags, const Image* image, Texture* texture)
+   FromImage( const VkDevice logical_device, const VmaAllocator allocator, const VmaAllocationCreateFlags allocation_flags, const Image* image, Texture* texture ) { VkFormat format; if
+   (image->channels == 4) { format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB; } else { evoLog(PrintSeverity::Error, "Image has {} channels, need 4.", image->channels); return
+   VK_ERROR_FORMAT_NOT_SUPPORTED;
         }
 
         VkExtent3D extent {
@@ -137,54 +165,11 @@ namespace texture {
         return vmaCreateImage(allocator, &create_info, &allocation_info, &texture->data, &texture->allocation, nullptr);
     }
 
-    VkResult CreateView(const VkDevice logical_device, const VkFormat texture_format, const VkImageAspectFlags aspect_flags, Texture* texture) {
-        VkImageViewCreateInfo view_create_info {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = texture->data,
-            .viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-            .format = texture_format,
-            .components =
-                {
-                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-                },
-            .subresourceRange = {
-                .aspectMask = aspect_flags,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-        };
-
-        return vkCreateImageView(logical_device, &view_create_info, nullptr, &texture->view);
-    }
-
-    void Destroy(const VmaAllocator allocator, const VkDevice logical_device, Texture* texture) {
-        if (texture->view != nullptr) {
-            vkDestroyImageView(logical_device, texture->view, nullptr);
-            texture->view = nullptr;
-        }
-
-        vmaDestroyImage(allocator, texture->data, texture->allocation);
-        texture->data = nullptr;
-        texture->allocation = nullptr;
-    }
-
-    VkResult LoadImage(
-        const VkDevice logical_device,
-        const VkQueue graphics_queue,
-        const VkCommandPool command_pool,
-        const VmaAllocator allocator,
-        const Image* image,
-        Texture* texture
-    ) {
+    bool gfx::LoadImage(const VkDevice logical_device, const VkQueue graphics_queue, const VkCommandPool command_pool, const VmaAllocator allocator, const Image* image, Texture* texture) {
         Buffer staging_buffer {};
         buffer::Create(
-            image->size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, allocator, &staging_buffer
+            image->size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, allocator,
+   &staging_buffer
         );
 
         void* data;
@@ -209,7 +194,7 @@ namespace texture {
 
         TransitionImageLayout(
             temp_command_buffer, texture->data, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, 0, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+   VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
         );
 
         VkBufferImageCopy region {
@@ -229,8 +214,8 @@ namespace texture {
         vkCmdCopyBufferToImage(temp_command_buffer, staging_buffer.data, texture->data, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
         TransitionImageLayout(
-            temp_command_buffer, texture->data, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_ACCESS_2_SHADER_READ_BIT, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            temp_command_buffer, texture->data, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT,
+            VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
         vkEndCommandBuffer(temp_command_buffer);
@@ -248,4 +233,4 @@ namespace texture {
 
         return VK_SUCCESS; // simplified return, doesn't know where it failed (it also can't lol). not important right now
     }
-} // namespace texture
+*/

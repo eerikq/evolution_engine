@@ -1,4 +1,5 @@
 #include "core/log.h"
+#include "gfx/command.h"
 #include "gfx/device.h"
 #include "gfx/instance.h"
 #include "gfx/swapchain.h"
@@ -14,6 +15,8 @@ struct renderer::Renderer {
     gfx::Instance instance;
     gfx::Device device;
     gfx::Swapchain swapchain;
+
+    gfx::Command command;
 
     VkSurfaceKHR surface; // ← will probably be part of another struct.
     // or maybe not! surface is weird and doesnt *quite* have a well defined place it belongs to.
@@ -66,6 +69,17 @@ bool renderer::Create(Renderer* resources, platform::Window* window) {
     gfx::GetSwapchainImages(&renderer_resources.swapchain, renderer_resources.device.logical);
     gfx::CreateSwapchainImageViews(&renderer_resources.swapchain, renderer_resources.device.logical);
 
+    // Create Depth
+    // Create Descriptor Set Layout
+    // Create Pipeline Layout
+    // Create Pipeline (Graphics)
+
+    gfx::CreateCommandPool(&renderer_resources.device, &renderer_resources.command);
+    gfx::AllocateCommandBuffers(&renderer_resources.device, &renderer_resources.command);
+
+    // Create Uniforms (?)
+    // Create Sync Objects
+
     return true;
 }
 
@@ -88,6 +102,13 @@ bool renderer::Resize(Renderer* resources, platform::Window* window) {
 }
 
 void renderer::Destroy(Renderer* resources, platform::Window* window) {
+    // Destroy Sync Objects
+    // Destroy Uniforms (?)
+    // Destroy Pipeline (Graphics)
+    // Destroy Pipeline Layout
+    // Destroy Descriptor Set Layout
+    // Destroy Depth
+
     gfx::DestroySwapchainImageViews(&renderer_resources.swapchain, renderer_resources.device.logical);
     gfx::DestroySwapchain(&renderer_resources.swapchain, renderer_resources.device.logical);
 

@@ -4,38 +4,25 @@
 //
 #include <vk_mem_alloc.h>
 
-typedef struct Buffer {
-    VkBuffer data = nullptr;
-    VkBufferView view = nullptr;
-    VmaAllocation allocation = nullptr;
-} Buffer;
+namespace gfx {
+    struct BufferDesc {
+        VkDeviceSize size;
+        VkBufferUsageFlags buffer_flags;
+        VmaAllocationCreateFlags allocation_flags;
+    };
 
-namespace buffer {
-    VkResult Create(
-        const VkDeviceSize size,
-        const VkBufferUsageFlags buffer_flags,
-        const VmaAllocationCreateFlags allocation_flags,
-        const VmaAllocator allocator,
-        Buffer* buffer
-    );
-    void Destroy(const VmaAllocator allocator, Buffer* buffer);
+    struct Buffer {
+        VkBuffer data = nullptr;
+        VmaAllocation allocation = nullptr;
+    };
 
-    VkResult CopyFromBuffer(
-        const VkQueue graphics_queue,
-        const VkCommandPool command_pool,
-        const VkDevice logical_device,
-        const Buffer source,
-        const Buffer destination,
-        const VkDeviceSize size
-    );
+    bool CreateBuffer(const VmaAllocator allocator, const BufferDesc* desc, Buffer* buffer);
+    void DestroyBuffer(const VmaAllocator allocator, Buffer* buffer);
 
-    VkResult Write(
-        const VmaAllocator allocator,
-        const VkQueue graphics_queue,
-        const VkCommandPool command_pool,
-        const VkDevice logical_device,
-        const VkDeviceSize data_size,
-        const void* data,
-        Buffer* buffer
-    );
-} // namespace buffer
+    // these also will probably move to the same place which implements upload to texture
+    // bool CopyFromBuffer(const VkQueue graphics_queue, const VkCommandPool command_pool, const VkDevice logical_device, const Buffer source, const Buffer destination, const VkDeviceSize
+    // size); bool WriteToBuffer(
+    //     const VmaAllocator allocator, const VkQueue graphics_queue, const VkCommandPool command_pool, const VkDevice logical_device, const VkDeviceSize data_size, const void* data,
+    //     Buffer* buffer
+    // );
+} // namespace gfx
