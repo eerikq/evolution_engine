@@ -294,19 +294,26 @@ int main() {
         if (!platform::CreateWindow(&window, &window_descriptor)) return EXIT_FAILURE;
 
         renderer::Renderer* renderer_resources = nullptr;
-        renderer::RendererDesc renderer_desc {};
-        if (!renderer::Create(renderer_resources, &renderer_desc, &window)) return EXIT_FAILURE;
+        renderer::RendererDesc renderer_desc {
+            // .max_frames_in_flight = 2,
+            // .enable_validation_layers = true,
+            // .required_validation_layers = {""},
+            // .required_device_extensions = {""},
+        };
+        if (!renderer::Create(renderer_resources, &window)) return EXIT_FAILURE;
 
         while (!window.should_close) {
             platform::PollEvents(&window);
+
             if (window.was_resized) {
-                // Recreate swapchain here
                 platform::ResizeWindow(&window);
+                renderer::Resize(renderer_resources, &window);
             }
+
             renderer::DrawFrame();
         }
 
-        renderer::Destroy(renderer_resources, &renderer_desc, &window);
+        renderer::Destroy(renderer_resources, &window);
 
         platform::DestroyWindow(&window);
         platform::Quit();

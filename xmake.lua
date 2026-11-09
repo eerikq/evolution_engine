@@ -52,7 +52,7 @@ target("evolution_renderer")
     add_includedirs("renderer/include", { public = true })
 
     add_defines("SDL_MAIN_HANDLED", "VK_NO_PROTOTYPES", { public = true })
-    add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE")
+    add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_FORCE_RADIANS")
     add_defines("VMA_VULKAN_VERSION=1004000", { public = true })
     add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", { public = true })
     add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
