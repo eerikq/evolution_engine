@@ -1,6 +1,8 @@
 #include "device.h"
 
 #include "core/log.h"
+#include "gfx/vma.h"
+#include "vulkan/vulkan_core.h"
 
 #include <cstring>
 #include <vector>
@@ -184,6 +186,21 @@ bool gfx::CreateLogicalDevice(gfx::Device* device, const gfx::DeviceDesc* desc, 
     if (vkCreateDevice(device->physical, &device_create_info, nullptr, &device->logical)) {
         evoLog(PrintSeverity::Fatal, "Failed to create logical device");
         return false;
+    }
+
+    // fetch the proper depth format here once since its based on what the device can support
+    device->depth_foramt = VK_FORMAT_UNDEFINED;
+    for (int i = 0; i < desc->desired_depth_formats_count; i++) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(device->physical, desc->desired_depth_formats[i], &props);
+
+        if (desc->desired_depth_tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & desc->desired_depth_features) == desc->desired_depth_features) {
+            device->depth_foramt = desc->desired_depth_formats[i];
+            break;
+        } else if (desc->desired_depth_tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & desc->desired_depth_features) == desc->desired_depth_features) {
+            device->depth_foramt = desc->desired_depth_formats[i];
+            break;
+        }
     }
 
     evoLog(PrintSeverity::Info, "Created logical device");

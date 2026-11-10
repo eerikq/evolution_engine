@@ -2,9 +2,11 @@
 #include "gfx/command.h"
 #include "gfx/device.h"
 #include "gfx/instance.h"
+#include "gfx/resources/texture.h"
 #include "gfx/swapchain.h"
 #include "gfx/vma.h"
 #include "platform/platform_sdl3_vulkan.h"
+#include "vulkan/vulkan_core.h"
 
 #include <evo/platform.h>
 #include <evo/renderer.h>
@@ -15,8 +17,9 @@ struct renderer::Renderer {
     gfx::Instance instance;
     gfx::Device device;
     gfx::Swapchain swapchain;
-
     gfx::Command command;
+
+    gfx::Texture depth_texture;
 
     VkSurfaceKHR surface; // ← will probably be part of another struct.
     // or maybe not! surface is weird and doesnt *quite* have a well defined place it belongs to.
@@ -69,7 +72,16 @@ bool renderer::Create(Renderer* resources, platform::Window* window) {
     gfx::GetSwapchainImages(&renderer_resources.swapchain, renderer_resources.device.logical);
     gfx::CreateSwapchainImageViews(&renderer_resources.swapchain, renderer_resources.device.logical);
 
-    // Create Depth
+    gfx::TextureDesc depth_texture_desc = {
+        .width = renderer_resources.swapchain.extent.width,
+        .height = renderer_resources.swapchain.extent.height,
+        .format = renderer_resources.device.depth_foramt,
+        .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        .allocation_flags = 0,
+    };
+    gfx::CreateTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &depth_texture_desc, &renderer_resources.depth_texture);
+    gfx::CreateTextureView(renderer_resources.device.logical, depth_texture_desc.format, VK_IMAGE_ASPECT_DEPTH_BIT, &renderer_resources.depth_texture);
+
     // Create Descriptor Set Layout
     // Create Pipeline Layout
     // Create Pipeline (Graphics)
