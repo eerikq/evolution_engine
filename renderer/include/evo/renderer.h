@@ -6,11 +6,11 @@ namespace platform {
 
 namespace renderer {
     struct RendererDesc {
-        int max_frames_in_flight = 2;
+        const int max_frames_in_flight = 2;
 #ifdef NDEBUG
-        bool enable_validation_layers = true;
+        const bool enable_validation_layers = true;
 #else
-        bool enable_validation_layers = false;
+        const bool enable_validation_layers = false;
 #endif
         const char* required_validation_layers[1] = {
             "VK_LAYER_KHRONOS_validation",

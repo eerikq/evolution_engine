@@ -48,6 +48,7 @@ target("evolution_renderer")
     add_files("renderer/src/gfx/vma.cpp")
     add_files("renderer/src/gfx/swapchain.cpp")
     add_files("renderer/src/gfx/command.cpp")
+    add_files("renderer/src/gfx/descriptor.cpp")
     add_files("renderer/src/gfx/resources/buffer.cpp")
     add_files("renderer/src/gfx/resources/texture.cpp")
 
