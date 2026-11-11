@@ -49,17 +49,22 @@ target("evolution_renderer")
     add_files("renderer/src/gfx/swapchain.cpp")
     add_files("renderer/src/gfx/command.cpp")
     add_files("renderer/src/gfx/descriptor.cpp")
+    add_files("renderer/src/gfx/pipeline.cpp")
     add_files("renderer/src/gfx/resources/buffer.cpp")
     add_files("renderer/src/gfx/resources/texture.cpp")
 
     add_includedirs("renderer/src")
     add_includedirs("renderer/include", { public = true })
 
-    add_defines("SDL_MAIN_HANDLED", "VK_NO_PROTOTYPES", { public = true })
+    if is_mode("debug") then
+        add_defines("EVO_DEBUG")
+        add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+    end
+
+    add_defines("SDL_MAIN_HANDLED")
+    add_defines("VK_NO_PROTOTYPES")
     add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_FORCE_RADIANS")
-    add_defines("VMA_VULKAN_VERSION=1004000", { public = true })
-    add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", { public = true })
-    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+    add_defines("VMA_VULKAN_VERSION=1004000", "VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1")
 
     add_packages("volk", "vulkan-headers", "vulkan-memory-allocator", "slang")
     add_packages("tinyobjloader", "glm", "fmt", "stb")

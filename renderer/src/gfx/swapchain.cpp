@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <vector>
 
-static uint32_t ChooseSwapMinImageCount(const VkSurfaceCapabilitiesKHR* capabilities, const uint32_t frames_in_flight) {
-    uint32_t minImageCount = std::max<uint32_t>(frames_in_flight, capabilities->minImageCount);
+static uint32_t ChooseSwapMinImageCount(const VkSurfaceCapabilitiesKHR* capabilities, const uint32_t max_frames_in_flight) {
+    uint32_t minImageCount = std::max<uint32_t>(max_frames_in_flight, capabilities->minImageCount);
 
     if ((0 < capabilities->maxImageCount) && (capabilities->maxImageCount < minImageCount)) minImageCount = capabilities->maxImageCount;
 

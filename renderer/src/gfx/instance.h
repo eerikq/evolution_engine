@@ -11,15 +11,15 @@ namespace gfx {
     struct InstanceDesc {
         const char* app_name;
         const char* engine_name;
-        uint32_t application_version;
-        uint32_t engine_version;
-        uint32_t vulkan_api_version;
+        const uint32_t application_version;
+        const uint32_t engine_version;
+        const uint32_t vulkan_api_version;
 
-        bool enable_validation_layers;
-        uint32_t validation_layers_count;
+        const bool enable_validation_layers;
+        const uint32_t validation_layers_count;
         const char* validation_layers;
 
-        uint32_t extensions_count;
+        const uint32_t extensions_count;
         const char* const* extensions;
     };
 

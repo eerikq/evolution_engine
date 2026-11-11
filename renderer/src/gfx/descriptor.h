@@ -1,23 +1,25 @@
 #pragma once
+
+#include "renderer_config.h"
+
 #include <volk.h>
 
 namespace gfx {
     struct Buffer;
 
     struct Descriptor {
-        VkDescriptorSetLayout* set_layout;
+        VkDescriptorSetLayout set_layout;
+        VkDescriptorPool pool;
+        VkDescriptorSet set[config::MAX_FRAMES_IN_FLIGHT];
     };
-    /*
-        VkResult CreateSetDescriptorLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout);
-        void DestroySetLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout);
 
-        VkResult CreatePool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool);
-        void DestroyPool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool);
+    bool CreateDescriptorSetLayout(const VkDevice logical_device, Descriptor* descriptor);
+    void DestroyDescriptorSetLayout(const VkDevice logical_device, Descriptor* descriptor);
 
-        VkResult CreateSets(const VkDevice logical_device, const VkDescriptorSetLayout descriptor_set_layout, const VkDescriptorPool descriptor_pool, VkDescriptorSet* descriptor_set);
-        VkResult ConfigureSets(
-            const VkDevice logical_device, const gfx::Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, const VkDescriptorSet* descriptor_sets
-        );
-        void DestroySets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, const uint32_t descriptor_set_count, VkDescriptorSet* descriptor_sets);
-    */
+    bool CreateDescriptorPool(const VkDevice logical_device, const uint32_t frames_in_flight, Descriptor* descriptor);
+    void DestroyDescriptorPool(const VkDevice logical_device, Descriptor* descriptor);
+
+    bool CreateDescriptorSets(const VkDevice logical_device, Descriptor* descriptor);
+    void ConfigureDescriptorSets(const VkDevice logical_device, const gfx::Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Descriptor* descriptor);
+    void DestroyDescriptorSets(const VkDevice logical_device, Descriptor* descriptor);
 } // namespace gfx
