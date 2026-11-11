@@ -1,19 +1,23 @@
 #pragma once
-
 #include <volk.h>
 
 namespace gfx {
     struct Buffer;
 
-    VkResult CreateSetLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout);
-    void DestroySetLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout);
+    struct Descriptor {
+        VkDescriptorSetLayout* set_layout;
+    };
+    /*
+        VkResult CreateSetDescriptorLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout);
+        void DestroySetLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout);
 
-    VkResult CreatePool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool);
-    void DestroyPool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool);
+        VkResult CreatePool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool);
+        void DestroyPool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool);
 
-    VkResult CreateSets(const VkDevice logical_device, const VkDescriptorSetLayout descriptor_set_layout, const VkDescriptorPool descriptor_pool, VkDescriptorSet* descriptor_set);
-    VkResult ConfigureSets(
-        const VkDevice logical_device, const gfx::Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, const VkDescriptorSet* descriptor_sets
-    );
-    void DestroySets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, const uint32_t descriptor_set_count, VkDescriptorSet* descriptor_sets);
+        VkResult CreateSets(const VkDevice logical_device, const VkDescriptorSetLayout descriptor_set_layout, const VkDescriptorPool descriptor_pool, VkDescriptorSet* descriptor_set);
+        VkResult ConfigureSets(
+            const VkDevice logical_device, const gfx::Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, const VkDescriptorSet* descriptor_sets
+        );
+        void DestroySets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, const uint32_t descriptor_set_count, VkDescriptorSet* descriptor_sets);
+    */
 } // namespace gfx

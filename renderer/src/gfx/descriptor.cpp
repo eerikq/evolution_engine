@@ -2,36 +2,36 @@
 
 #include "types/ubo.h"
 
-#include <array>
-#include <vector>
-
 namespace gfx {
-    VkResult CreateSetLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout) {
-        VkDescriptorSetLayoutBinding sampler_layout_binding {
-            .binding = 1,
-            .descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT | VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
-
+    bool CreateDescriptorSetLayout(const VkDevice logical_device, Descriptor* descriptor) {
         VkDescriptorSetLayoutBinding ubo_layout_binding {
             .binding = 0,
-            .descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = 1,
-            .stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT | VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr
         };
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings {sampler_layout_binding, ubo_layout_binding};
+        VkDescriptorSetLayoutBinding sampler_layout_binding {
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
+
+        VkDescriptorSetLayoutBinding bindings[2] = {
+            ubo_layout_binding,
+            sampler_layout_binding,
+        };
 
         VkDescriptorSetLayoutCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = static_cast<uint32_t>(bindings.size()),
-            .pBindings = bindings.data(),
+            .bindingCount = 2,
+            .pBindings = bindings,
         };
 
-        return vkCreateDescriptorSetLayout(logical_device, &create_info, nullptr, descriptor_layout);
+        return vkCreateDescriptorSetLayout(logical_device, &create_info, nullptr, descriptor->set_layout);
     }
 
     void DestroySetLayout(const VkDevice logical_device, VkDescriptorSetLayout* descriptor_layout) {
@@ -39,7 +39,7 @@ namespace gfx {
     }
 
     VkResult CreatePool(const VkDevice logical_device, VkDescriptorPool* descriptor_pool) {
-        std::array<VkDescriptorPoolSize, 2> pool_sizes {{
+        VkDescriptorPoolSize pool_sizes[2] = {
             {
                 .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .descriptorCount = static_cast<uint32_t>(EngineConfig::max_frames_in_flight),
@@ -48,7 +48,7 @@ namespace gfx {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = static_cast<uint32_t>(EngineConfig::max_frames_in_flight),
             },
-        }};
+        };
 
         VkDescriptorPoolCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,

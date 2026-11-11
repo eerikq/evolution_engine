@@ -6,7 +6,6 @@
 #include "gfx/swapchain.h"
 #include "gfx/vma.h"
 #include "platform/platform_sdl3_vulkan.h"
-#include "vulkan/vulkan_core.h"
 
 #include <evo/platform.h>
 #include <evo/renderer.h>
