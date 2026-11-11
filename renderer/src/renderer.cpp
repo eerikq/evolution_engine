@@ -1,5 +1,6 @@
 #include "core/log.h"
 #include "gfx/command.h"
+#include "gfx/descriptor.h"
 #include "gfx/device.h"
 #include "gfx/instance.h"
 #include "gfx/resources/texture.h"
@@ -17,7 +18,7 @@ struct renderer::Renderer {
     gfx::Device device;
     gfx::Swapchain swapchain;
     gfx::Command command;
-
+    gfx::Descriptor descriptor;
     gfx::Texture depth_texture;
 
     VkSurfaceKHR surface; // ← will probably be part of another struct.
@@ -81,7 +82,7 @@ bool renderer::Create(Renderer* resources, platform::Window* window) {
     gfx::CreateTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &depth_texture_desc, &renderer_resources.depth_texture);
     gfx::CreateTextureView(renderer_resources.device.logical, depth_texture_desc.format, VK_IMAGE_ASPECT_DEPTH_BIT, &renderer_resources.depth_texture);
 
-    // Create Descriptor Set Layout
+    gfx::CreateDescriptorSetLayout(renderer_resources.device.logical, &renderer_resources.descriptor);
     // Create Pipeline Layout
     // Create Pipeline (Graphics)
 
@@ -117,8 +118,8 @@ void renderer::Destroy(Renderer* resources, platform::Window* window) {
     // Destroy Uniforms (?)
     // Destroy Pipeline (Graphics)
     // Destroy Pipeline Layout
-    // Destroy Descriptor Set Layout
-    // Destroy Depth
+    gfx::DestroyDescriptorSetLayout(renderer_resources.device.logical, &renderer_resources.descriptor);
+    gfx::DestroyTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &renderer_resources.depth_texture);
 
     gfx::DestroySwapchainImageViews(&renderer_resources.swapchain, renderer_resources.device.logical);
     gfx::DestroySwapchain(&renderer_resources.swapchain, renderer_resources.device.logical);

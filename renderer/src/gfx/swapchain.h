@@ -1,8 +1,8 @@
 #pragma once
 
-#include <volk.h>
+#include "renderer_config.h"
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#include <volk.h>
 
 namespace platform {
     struct Window;
@@ -25,13 +25,13 @@ namespace gfx {
         VkSurfaceFormatKHR surface_format = {};
         VkExtent2D extent = {};
 
-        VkImage images[MAX_FRAMES_IN_FLIGHT] = {nullptr};
-        VkImageView image_views[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkImage images[config::MAX_FRAMES_IN_FLIGHT] = {};
+        VkImageView image_views[config::MAX_FRAMES_IN_FLIGHT] = {nullptr};
 
         // ↓↓↓ unclear if they belong here
-        VkSemaphore present_complete_semaphores[MAX_FRAMES_IN_FLIGHT] = {nullptr};
-        VkSemaphore render_finished_semaphores[MAX_FRAMES_IN_FLIGHT] = {nullptr};
-        VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkSemaphore present_complete_semaphores[config::MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkSemaphore render_finished_semaphores[config::MAX_FRAMES_IN_FLIGHT] = {nullptr};
+        VkFence in_flight_fences[config::MAX_FRAMES_IN_FLIGHT] = {nullptr};
     };
 
     bool CreateSwapchain(Swapchain* swapchain, const platform::Window* window, const Device* device, const VkSurfaceKHR surface);

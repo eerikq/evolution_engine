@@ -1,56 +1,51 @@
 #include "uniform.h"
 
-#include "engine_config.h"
 #include "types/ubo.h"
 
-#include <cstring>
-
-#define GLM_FORCE_RADIANS
 #include <chrono>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <imgui.h>
 
-namespace uniform {
-    VkResult CreateBuffers(const VmaAllocator allocator, Buffer* uniform_buffers, void** uniform_buffers_mapped) {
-        for (uint32_t i = 0; i < EngineConfig::max_frames_in_flight; i++) {
-            buffer::Create(
-                sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, allocator, &uniform_buffers[i]
-            );
+// don't need this
+/*
+VkResult CreateBuffers(const VmaAllocator allocator, Buffer* uniform_buffers, void** uniform_buffers_mapped) {
+    for (uint32_t i = 0; i < EngineConfig::max_frames_in_flight; i++) {
+        buffer::Create(
+            sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, allocator,
+            &uniform_buffers[i]
+        );
 
-            if (vmaMapMemory(allocator, uniform_buffers[i].allocation, &uniform_buffers_mapped[i]) != VK_SUCCESS) return VK_ERROR_MEMORY_MAP_FAILED;
-        }
-
-        return VK_SUCCESS;
+        if (vmaMapMemory(allocator, uniform_buffers[i].allocation, &uniform_buffers_mapped[i]) != VK_SUCCESS) return VK_ERROR_MEMORY_MAP_FAILED;
     }
 
-    void UpdateBuffers(const ShaderVariables variables, const int frame_index, const VkExtent2D swapchain_extent, void** uniform_buffers_mapped) {
-        static auto startTime = std::chrono::high_resolution_clock::now();
+    return VK_SUCCESS;
+}
+*/
+void gfx::UpdateUniformBuffers(const ShaderVariables variables, const int frame_index, const VkExtent2D swapchain_extent, void** uniform_buffers_mapped) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
 
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        UniformBufferObject ubo {
-            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f),
-        };
-        ubo.proj[1][1] *= -1;
+    UniformBufferObject ubo {
+        .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f),
+    };
+    ubo.proj[1][1] *= -1;
 
-        ubo.sun_direction = {
-            variables.sun_direction[0],
-            variables.sun_direction[1],
-            variables.sun_direction[2],
-            variables.sun_direction[3],
-        };
-        ubo.sun_color = {
-            variables.sun_color[0],
-            variables.sun_color[1],
-            variables.sun_color[2],
-            variables.sun_intensity,
-        };
+    ubo.sun_direction = {
+        variables.sun_direction[0],
+        variables.sun_direction[1],
+        variables.sun_direction[2],
+        variables.sun_direction[3],
+    };
+    ubo.sun_color = {
+        variables.sun_color[0],
+        variables.sun_color[1],
+        variables.sun_color[2],
+        variables.sun_intensity,
+    };
 
-        memcpy(uniform_buffers_mapped[frame_index], &ubo, sizeof(ubo));
-    }
-} // namespace uniform
+    memcpy(uniform_buffers_mapped[frame_index], &ubo, sizeof(ubo));
+}
