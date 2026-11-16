@@ -1,4 +1,6 @@
+#include "core/image.h"
 #include "core/log.h"
+#include "core/model.h"
 #include "gfx/command.h"
 #include "gfx/descriptor.h"
 #include "gfx/device.h"
@@ -12,11 +14,26 @@
 #include "platform/platform_sdl3_vulkan.h"
 #include "renderer_config.h"
 #include "types/ubo.h"
+#include "types/vertex.h"
+#include "vulkan/vulkan_core.h"
 
 #include <evo/platform.h>
 #include <evo/renderer.h>
+#include <vector>
 
 struct renderer::Renderer {
+    // this is NOT staying here, kill on sight after finishing course report
+    Image image;
+    gfx::Texture texture;
+    VkSampler sampler;
+
+    gfx::Buffer vertex_buffer;
+    std::vector<Vertex> vertex_array;
+
+    gfx::Buffer index_buffer;
+    std::vector<uint16_t> index_array;
+    // this is NOT staying here, kill on sight after finishing course report
+
     RendererDesc desc;
 
     VkInstance instance = nullptr;
@@ -147,6 +164,78 @@ bool renderer::Create(Renderer* resources, platform::Window* window) {
     return true;
 }
 
+// temporary place just to store resource loading for course loading
+bool renderer::CreateResources(Renderer* resources) {
+    model::Load("assets/viking_room.obj", &renderer_resources.vertex_array, &renderer_resources.index_array);
+
+    gfx::BufferDesc vertex_buffer_desc = {
+        .size = sizeof(renderer_resources.vertex_array[0]) * renderer_resources.vertex_array.size(),
+        .buffer_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        .allocation_flags = 0,
+    };
+    gfx::CreateBuffer(renderer_resources.device.allocator, &vertex_buffer_desc, &renderer_resources.vertex_buffer);
+    // write to buffer
+
+    gfx::BufferDesc index_buffer_desc = {
+        .size = sizeof(renderer_resources.index_array[0]) * renderer_resources.index_array.size(),
+        .buffer_flags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        .allocation_flags = 0,
+    };
+    gfx::CreateBuffer(renderer_resources.device.allocator, &vertex_buffer_desc, &renderer_resources.vertex_buffer);
+    // write to buffer
+
+    image::LoadFromFile("assets/viking_room.png", &renderer_resources.image);
+    gfx::TextureDesc texture_desc = {
+        .width = static_cast<uint32_t>(renderer_resources.image.width),
+        .height = static_cast<uint32_t>(renderer_resources.image.height),
+        .format = VK_FORMAT_R8G8B8A8_SRGB,
+        .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        .allocation_flags = 0,
+    };
+    gfx::CreateTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &texture_desc, &renderer_resources.texture);
+    // write to texture (based on image data)
+    gfx::CreateTextureView(renderer_resources.device.logical, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, &renderer_resources.texture);
+
+    VkSamplerCreateInfo create_info = {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter = VK_FILTER_LINEAR,
+        .minFilter = VK_FILTER_LINEAR,
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .mipLodBias = 0.0f,
+        .anisotropyEnable = true,
+        .maxAnisotropy = renderer_resources.device.device_properties.properties.limits.maxSamplerAnisotropy,
+        .compareEnable = false,
+        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .minLod = 0.0f,
+        .maxLod = 0.0f,
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .unnormalizedCoordinates = false,
+    };
+    vkCreateSampler(renderer_resources.device.logical, &create_info, nullptr, &renderer_resources.sampler);
+
+    // gfx::CreateDescriptorSets
+    // create descriptor sets
+
+    return true;
+}
+void renderer::DestroyResources(Renderer* resources) {
+    // destroy descriptor sets
+
+    vkDestroySampler(renderer_resources.device.logical, renderer_resources.sampler, nullptr);
+
+    gfx::DestroyTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &renderer_resources.texture);
+    image::Free(&renderer_resources.image);
+
+    gfx::DestroyBuffer(renderer_resources.device.allocator, &renderer_resources.index_buffer);
+    gfx::DestroyBuffer(renderer_resources.device.allocator, &renderer_resources.vertex_buffer);
+
+    renderer_resources.index_array.clear();
+    renderer_resources.index_array.clear();
+}
+
 void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
     const gfx::Frame* frame = &renderer_resources.frames[renderer_resources.current_frame];
     uint32_t image_index = 0;
@@ -168,6 +257,8 @@ void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
     };
     VkResult image_acquisition_result = vkAcquireNextImage2KHR(renderer_resources.device.logical, &image_acquisition_info, &image_index);
     if (image_acquisition_result == VK_ERROR_OUT_OF_DATE_KHR || window->was_resized) {
+        vkDeviceWaitIdle(renderer_resources.device.logical);
+
         renderer::Resize(&renderer_resources, window);
         return;
     }
@@ -206,7 +297,7 @@ void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
     VkClearValue color_clear_value = {0.0f, 0.0f, 0.0f, 0.0f};
     VkClearValue depth_clear_value = {1.0f, 0};
 
-    VkRenderingAttachmentInfo color_attachment_info {
+    VkRenderingAttachmentInfo color_attachment_info = {
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .imageView = renderer_resources.swapchain.image_views[image_index],
         .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -214,7 +305,7 @@ void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = color_clear_value
     };
-    VkRenderingAttachmentInfo depth_attachment_info {
+    VkRenderingAttachmentInfo depth_attachment_info = {
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .imageView = renderer_resources.depth_texture.view,
         .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
@@ -223,7 +314,7 @@ void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
         .clearValue = depth_clear_value
     };
 
-    VkRenderingInfo rendering_info {
+    VkRenderingInfo rendering_info = {
         .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
         .renderArea =
             {
@@ -243,15 +334,15 @@ void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
     VkRect2D offset = VkRect2D(VkOffset2D(0, 0), renderer_resources.swapchain.extent);
     vkCmdSetViewport(frame->command_buffer, 0, 1, &viewport);
     vkCmdSetScissor(frame->command_buffer, 0, 1, &offset);
-    /*
+
     VkDeviceSize device_size = 0;
-    vkCmdBindVertexBuffers(frame->command_buffer, 0, 1, vertex_buffer, &device_size);
-    vkCmdBindIndexBuffer(frame->command_buffer, *index_buffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindVertexBuffers(frame->command_buffer, 0, 1, &renderer_resources.vertex_buffer.handle, &device_size);
+    vkCmdBindIndexBuffer(frame->command_buffer, renderer_resources.index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdBindDescriptorSets(frame->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer_resources.pipeline.layout, 0, 1, &frame->descriptor_set, 0, nullptr);
 
-    vkCmdDrawIndexed(frame->command_buffer, index_buffer_size, 1, 0, 0, 0);
-    */
+    vkCmdDrawIndexed(frame->command_buffer, renderer_resources.vertex_array.size(), 1, 0, 0, 0);
+
     vkCmdEndRendering(frame->command_buffer);
 
     gfx::CmdTransitionImageLayout(
@@ -277,7 +368,7 @@ void renderer::DrawFrame(Renderer* resources, platform::Window* window) {
     };
     vkQueueSubmit(renderer_resources.device.graphics_queue, 1, &submit_info, frame->in_flight_fence); // the fence becomes signaled once the queue is submitted
 
-    VkPresentInfoKHR present_info {
+    VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &renderer_resources.swapchain.render_finished_semaphores[image_index],
@@ -312,6 +403,8 @@ bool renderer::Resize(Renderer* resources, platform::Window* window) {
 }
 
 void renderer::Destroy(Renderer* resources, platform::Window* window) {
+    vkDeviceWaitIdle(renderer_resources.device.logical);
+
     DestroySyncObjects();
 
     for (int i = 0; i < config::FRAMES_IN_FLIGHT; i++) {

@@ -1,1 +1,71 @@
 #include "uploader.h"
+
+bool gfx::LoadImage(const VkDevice logical_device, const VkQueue graphics_queue, const VkCommandPool command_pool, const VmaAllocator allocator, const Image* image, Texture* texture) {
+    /*
+    Buffer staging_buffer = {};
+    buffer::Create(
+        image->size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, allocator, &staging_buffer
+    );
+
+    void* data;
+    vmaMapMemory(allocator, staging_buffer.allocation, &data);
+    memcpy(data, image->data, image->size);
+    vmaUnmapMemory(allocator, staging_buffer.allocation);
+
+    VkCommandBufferAllocateInfo command_buffer_create_info {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = command_pool,
+        .level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    VkCommandBuffer temp_command_buffer;
+    vkAllocateCommandBuffers(logical_device, &command_buffer_create_info, &temp_command_buffer);
+
+    VkCommandBufferBeginInfo command_buffer_begin_info {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    vkBeginCommandBuffer(temp_command_buffer, &command_buffer_begin_info);
+
+    TransitionImageLayout(
+        temp_command_buffer, texture->data, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, 0, VK_ACCESS_2_TRANSFER_WRITE_BIT, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
+        VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    );
+
+    VkBufferImageCopy region {
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {static_cast<uint32_t>(image->width), static_cast<uint32_t>(image->height), 1}
+    };
+    vkCmdCopyBufferToImage(temp_command_buffer, staging_buffer.data, texture->data, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    TransitionImageLayout(
+        temp_command_buffer, texture->data, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT,
+        VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
+    vkEndCommandBuffer(temp_command_buffer);
+
+    VkSubmitInfo submit_info {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &temp_command_buffer,
+    };
+    vkQueueSubmit(graphics_queue, 1, &submit_info, nullptr);
+    vkQueueWaitIdle(graphics_queue);
+
+    buffer::Destroy(allocator, &staging_buffer);
+    vkFreeCommandBuffers(logical_device, command_pool, 1, &temp_command_buffer);
+
+    return VK_SUCCESS; // simplified return, doesn't know where it failed (it also can't lol). not important right now
+    */
+}

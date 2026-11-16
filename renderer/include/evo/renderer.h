@@ -29,6 +29,10 @@ namespace renderer {
     };
 
     bool Create(Renderer* resources, platform::Window* window);
+
+    bool CreateResources(Renderer* resources);
+    void DestroyResources(Renderer* resources);
+
     void DrawFrame(Renderer* resources, platform::Window* window);
     bool Resize(Renderer* resources, platform::Window* window);
     void Destroy(Renderer* resources, platform::Window* window);

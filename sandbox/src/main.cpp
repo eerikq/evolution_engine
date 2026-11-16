@@ -269,6 +269,7 @@
 #include "evo/renderer.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <exception>
 
 // custom ifndefs to avoid including <stdlib.h>
@@ -300,6 +301,8 @@ int main() {
         };
         if (!renderer::Create(renderer_resources, &window)) return EXIT_FAILURE;
 
+        if (!renderer::CreateResources(renderer_resources)) return EXIT_FAILURE;
+
         while (!window.should_close) {
             platform::PollEvents(&window);
 
@@ -310,6 +313,8 @@ int main() {
 
             renderer::DrawFrame(renderer_resources, &window);
         }
+
+        renderer::DestroyResources(renderer_resources);
 
         renderer::Destroy(renderer_resources, &window);
 
