@@ -1,6 +1,7 @@
 #include "instance.h"
 
 #include "core/log.h"
+#include "renderer_config.h"
 
 #include <cstring>
 #include <vector>
@@ -53,7 +54,7 @@ static bool ValidateInstanceExtensions(const uint32_t extensions_count, const ch
     return true;
 }
 
-bool gfx::CreateInstance(Instance* instance, const InstanceDesc* desc) {
+bool gfx::CreateInstance(const InstanceDesc* desc, VkInstance* instance) {
     VkApplicationInfo app_info {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = desc->app_name,
@@ -64,13 +65,13 @@ bool gfx::CreateInstance(Instance* instance, const InstanceDesc* desc) {
     };
 
     // instance (validation) layers
-    uint32_t validation_layers_count = desc->enable_validation_layers ? desc->validation_layers_count : 0;
-    const char* const* validation_layers_names = desc->enable_validation_layers ? &desc->validation_layers : nullptr;
+    uint32_t validation_layers_count = config::VALIDATION_LAYERS_ENABLED ? desc->validation_layers_count : 0;
+    const char* const* validation_layers_names = config::VALIDATION_LAYERS_ENABLED ? &desc->validation_layers : nullptr;
 
     if (!ValidateInstanceLayers(validation_layers_count, validation_layers_names)) return false;
 
     std::vector extensions(desc->extensions, desc->extensions + desc->extensions_count);
-    if (desc->enable_validation_layers) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    if (config::VALIDATION_LAYERS_ENABLED) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     // append "VK_EXT_DEBUG_UTILS_EXTENSION_NAME" to the end of extensions to enable validation layers
 
     if (!ValidateInstanceExtensions((uint32_t)extensions.size(), extensions.data())) return false;
@@ -84,17 +85,17 @@ bool gfx::CreateInstance(Instance* instance, const InstanceDesc* desc) {
         .ppEnabledExtensionNames = extensions.data(),
     };
 
-    if (vkCreateInstance(&create_info, nullptr, &instance->instance)) {
+    if (vkCreateInstance(&create_info, nullptr, instance)) {
         evoLog(PrintSeverity::Fatal, "Failed to create Vulkan instance");
         return false;
     }
 
-    evoLog(PrintSeverity::Info, "Created Vulkan instance. Validation layers {}", desc->enable_validation_layers ? "Enabled" : "Disabled");
+    evoLog(PrintSeverity::Info, "Created Vulkan instance. Validation layers {}", config::VALIDATION_LAYERS_ENABLED ? "Enabled" : "Disabled");
     return true;
 }
 
-void gfx::DestroyInstance(Instance* instance) {
-    vkDestroyInstance(instance->instance, nullptr);
+void gfx::DestroyInstance(VkInstance* instance) {
+    vkDestroyInstance(*instance, nullptr);
     evoLog(PrintSeverity::Debug, "Destroyed Vulkan instance");
 }
 
@@ -104,7 +105,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessa
     return VK_FALSE;
 }
 
-bool gfx::CreateDebugMessenger(Instance* instance) {
+bool gfx::CreateDebugMessenger(const VkInstance instance, VkDebugUtilsMessengerEXT* debug_messenger) {
     VkDebugUtilsMessageSeverityFlagsEXT severity_flags = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     VkDebugUtilsMessageTypeFlagsEXT message_type_flags = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
                                                          VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
@@ -115,7 +116,7 @@ bool gfx::CreateDebugMessenger(Instance* instance) {
         .pfnUserCallback = &debugCallback,
     };
 
-    if (vkCreateDebugUtilsMessengerEXT(instance->instance, &create_info, nullptr, &instance->debug_messenger)) {
+    if (vkCreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, debug_messenger)) {
         evoLog(PrintSeverity::Error, "Failed to create Vulkan debug messenger");
         return false;
     }
@@ -124,7 +125,7 @@ bool gfx::CreateDebugMessenger(Instance* instance) {
     return true;
 }
 
-void gfx::DestroyDebugMessenger(Instance* instance) {
-    vkDestroyDebugUtilsMessengerEXT(instance->instance, instance->debug_messenger, nullptr);
+void gfx::DestroyDebugMessenger(const VkInstance instance, VkDebugUtilsMessengerEXT* debug_messenger) {
+    vkDestroyDebugUtilsMessengerEXT(instance, *debug_messenger, nullptr);
     evoLog(PrintSeverity::Debug, "Destroyed Vulkan debug messenger");
 }

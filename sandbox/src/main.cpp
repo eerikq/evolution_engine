@@ -295,10 +295,8 @@ int main() {
 
         renderer::Renderer* renderer_resources = nullptr;
         renderer::RendererDesc renderer_desc {
-            // .max_frames_in_flight = 2,
-            // .enable_validation_layers = true,
-            // .required_validation_layers = {""},
-            // .required_device_extensions = {""},
+            // .required_validation_layers = {"VK_LAYER_KHRONOS_validation"},
+            // .required_device_extensions = {"VK_KHR_swapchain"},
         };
         if (!renderer::Create(renderer_resources, &window)) return EXIT_FAILURE;
 
@@ -310,7 +308,7 @@ int main() {
                 renderer::Resize(renderer_resources, &window);
             }
 
-            renderer::DrawFrame();
+            renderer::DrawFrame(renderer_resources, &window);
         }
 
         renderer::Destroy(renderer_resources, &window);

@@ -6,14 +6,16 @@
 
 namespace gfx {
     struct BufferDesc {
-        VkDeviceSize size;
-        VkBufferUsageFlags buffer_flags;
-        VmaAllocationCreateFlags allocation_flags;
+        VkDeviceSize size = 0;
+        VkBufferUsageFlags buffer_flags = 0;
+        VmaAllocationCreateFlags allocation_flags = 0;
     };
 
     struct Buffer {
-        VkBuffer data = nullptr;
+        VkBuffer handle = nullptr;
+        void* mapped_data = nullptr;
         VmaAllocation allocation = nullptr;
+        VkDeviceSize size = 0;
     };
 
     bool CreateBuffer(const VmaAllocator allocator, const BufferDesc* desc, Buffer* buffer);

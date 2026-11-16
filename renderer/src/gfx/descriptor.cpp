@@ -1,9 +1,11 @@
 #include "descriptor.h"
 
 #include "core/log.h"
+#include "gfx/draw.h"
+#include "gfx/pipeline.h"
 #include "renderer_config.h"
 
-bool gfx::CreateDescriptorSetLayout(const VkDevice logical_device, Descriptor* descriptor) {
+bool gfx::CreateDescriptorSetLayout(const VkDevice logical_device, Pipeline* pipeline) {
     VkDescriptorSetLayoutBinding ubo_layout_binding = {
         .binding = 0,
         .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -31,7 +33,7 @@ bool gfx::CreateDescriptorSetLayout(const VkDevice logical_device, Descriptor* d
         .pBindings = bindings,
     };
 
-    if (vkCreateDescriptorSetLayout(logical_device, &create_info, nullptr, &descriptor->set_layout)) {
+    if (vkCreateDescriptorSetLayout(logical_device, &create_info, nullptr, &pipeline->descriptor_set_layout)) {
         evoLog(PrintSeverity::Fatal, "Failed creating descriptor set layout");
         return false;
     }
@@ -40,12 +42,12 @@ bool gfx::CreateDescriptorSetLayout(const VkDevice logical_device, Descriptor* d
     return false;
 }
 
-void gfx::DestroyDescriptorSetLayout(const VkDevice logical_device, Descriptor* descriptor) {
-    vkDestroyDescriptorSetLayout(logical_device, descriptor->set_layout, nullptr);
+void gfx::DestroyDescriptorSetLayout(const VkDevice logical_device, Pipeline* pipeline) {
+    vkDestroyDescriptorSetLayout(logical_device, pipeline->descriptor_set_layout, nullptr);
     evoLog(PrintSeverity::Debug, "Destroyed descriptor set layout");
 }
 
-bool gfx::CreateDescriptorPool(const VkDevice logical_device, const uint32_t frames_in_flight, Descriptor* descriptor) {
+bool gfx::CreateDescriptorPool(const VkDevice logical_device, Pipeline* pipeline) {
     // the way i understand this is basically "how many x thing do you have?",
     // in my case for example, its "how many uniforms and samplers are there ever gonna be at one time?".
     // there is only one uniform buffer (mvp matrices and direcitonal lighting/sun), one sampler (one per material),
@@ -53,22 +55,22 @@ bool gfx::CreateDescriptorPool(const VkDevice logical_device, const uint32_t fra
     VkDescriptorPoolSize pool_sizes[2] = {
         {
             .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1 * frames_in_flight,
+            .descriptorCount = 1 * config::FRAMES_IN_FLIGHT,
         },
         {
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1 * frames_in_flight,
+            .descriptorCount = 1 * config::FRAMES_IN_FLIGHT,
         },
     };
 
     VkDescriptorPoolCreateInfo create_info {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = frames_in_flight,
+        .maxSets = config::FRAMES_IN_FLIGHT,
         .poolSizeCount = 2,
         .pPoolSizes = pool_sizes,
     };
 
-    if (vkCreateDescriptorPool(logical_device, &create_info, nullptr, &descriptor->pool)) {
+    if (vkCreateDescriptorPool(logical_device, &create_info, nullptr, &pipeline->descriptor_pool)) {
         evoLog(PrintSeverity::Fatal, "Failed to create descriptor pool");
         return false;
     }
@@ -77,20 +79,21 @@ bool gfx::CreateDescriptorPool(const VkDevice logical_device, const uint32_t fra
     return true;
 }
 
-void gfx::DestroyDescriptorPool(const VkDevice logical_device, Descriptor* descriptor) {
-    vkDestroyDescriptorPool(logical_device, descriptor->pool, nullptr);
+void gfx::DestroyDescriptorPool(const VkDevice logical_device, Pipeline* pipeline) {
+    vkDestroyDescriptorPool(logical_device, pipeline->descriptor_pool, nullptr);
     evoLog(PrintSeverity::Debug, "Destroyed descriptor pool");
 }
 
-bool gfx::CreateDescriptorSets(const VkDevice logical_device, Descriptor* descriptor) {
+/*
+bool gfx::CreateDescriptorSets(const VkDevice logical_device, const Pipeline* pipeline, Frame* frame) {
     VkDescriptorSetAllocateInfo alloc_info {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool = descriptor->pool,
-        .descriptorSetCount = config::MAX_FRAMES_IN_FLIGHT,
-        .pSetLayouts = &descriptor->set_layout,
+        .descriptorPool = pipeline->descriptor_pool,
+        .descriptorSetCount = config::FRAMES_IN_FLIGHT,
+        .pSetLayouts = &pipeline->descriptor_set_layout,
     };
 
-    if (vkAllocateDescriptorSets(logical_device, &alloc_info, descriptor->set)) {
+    if (vkAllocateDescriptorSets(logical_device, &alloc_info, frame->descriptor_sets)) {
         evoLog(PrintSeverity::Fatal, "Failed to allocate descriptor sets");
         return false;
     }
@@ -99,8 +102,8 @@ bool gfx::CreateDescriptorSets(const VkDevice logical_device, Descriptor* descri
     return true;
 }
 
-void gfx::ConfigureDescriptorSets(const VkDevice logical_device, const Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Descriptor* descriptor) {
-    for (size_t i = 0; i < config::MAX_FRAMES_IN_FLIGHT; i++) {
+void gfx::ConfigureDescriptorSets(const VkDevice logical_device, const Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Pipeline* descriptor) {
+    for (size_t i = 0; i < config::FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo buffer_info {
             .buffer = VkBuffer(),
             .offset = 0,
@@ -141,3 +144,4 @@ void gfx::ConfigureDescriptorSets(const VkDevice logical_device, const Buffer* u
 void DestroyDescriptorSets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, const uint32_t descriptor_set_count, VkDescriptorSet* descriptor_sets) {
     vkFreeDescriptorSets(logical_device, descriptor_pool, descriptor_set_count, descriptor_sets);
 }
+*/

@@ -1,10 +1,8 @@
 #include "pipeline.h"
 
 #include "core/file.h"
-#include "gfx/device.h"
+#include "core/log.h"
 #include "types/vertex.h"
-
-#include <array>
 
 // should probably be moved out of here
 [[nodiscard]] static VkShaderModule CreateShaderModule(const VkDevice logical_device, const std::vector<char> code) {
@@ -20,27 +18,45 @@
     return shader_module;
 }
 
-bool gfx::CreateGraphicsPipeline(const Device* device, const VkSurfaceFormatKHR swapchain_surface_format, const VkDescriptorSetLayout descriptor_set_layout, Pipeline* pipeline) {
-    VkShaderModule shaderModule = CreateShaderModule(device->logical, evoReadFile("shaders/slang.spv"));
-
-    VkPipelineShaderStageCreateInfo vertex_shader_stage_create_info {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        .stage = VK_SHADER_STAGE_VERTEX_BIT,
-        .module = shaderModule,
-        .pName = "vertMain",
-    };
-    VkPipelineShaderStageCreateInfo frag_shader_stage_create_info {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .module = shaderModule,
-        .pName = "fragMain",
-    };
-    VkPipelineShaderStageCreateInfo shader_stages[] = {
-        vertex_shader_stage_create_info,
-        frag_shader_stage_create_info,
+bool gfx::CreatePipelineLayout(const VkDevice logical_device, Pipeline* pipeline) {
+    VkPipelineLayoutCreateInfo pipeline_layout_create_info {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 1,
+        .pSetLayouts = &pipeline->descriptor_set_layout,
     };
 
-    VkVertexInputBindingDescription binding = VertexDescription::binding_description;
+    if (vkCreatePipelineLayout(logical_device, &pipeline_layout_create_info, nullptr, &pipeline->layout)) {
+        evoLog(PrintSeverity::Fatal, "Failed creating pipeline layout");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Created pipeline layout");
+    return true;
+}
+
+void gfx::DestroyPipelineLayout(const VkDevice logical_device, Pipeline* pipeline) {
+    vkDestroyPipelineLayout(logical_device, pipeline->layout, nullptr);
+    pipeline->layout = nullptr;
+    evoLog(PrintSeverity::Debug, "Destroyed pipeline layout");
+}
+
+bool gfx::CreateGraphicsPipeline(const VkDevice logical_device, const VkFormat depth_format, const VkSurfaceFormatKHR swapchain_surface_format, Pipeline* pipeline) {
+    VkShaderModule shaderModule = CreateShaderModule(logical_device, evoReadFile("shaders/slang.spv"));
+
+    VkPipelineShaderStageCreateInfo shader_stages[2] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = shaderModule,
+            .pName = "vertMain",
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = shaderModule,
+            .pName = "fragMain",
+        }
+    };
 
     VkPipelineVertexInputStateCreateInfo vertex_input_info {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -54,6 +70,7 @@ bool gfx::CreateGraphicsPipeline(const Device* device, const VkSurfaceFormatKHR 
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
     };
+
     VkPipelineViewportStateCreateInfo viewport_state {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .viewportCount = 1,
@@ -82,6 +99,15 @@ bool gfx::CreateGraphicsPipeline(const Device* device, const VkSurfaceFormatKHR 
         .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
+    VkPipelineDepthStencilStateCreateInfo depth_stencil {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = VK_TRUE,
+        .depthCompareOp = VK_COMPARE_OP_LESS,
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE,
+    };
+
     VkPipelineColorBlendStateCreateInfo color_blend_state {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .logicOpEnable = VK_FALSE,
@@ -90,34 +116,21 @@ bool gfx::CreateGraphicsPipeline(const Device* device, const VkSurfaceFormatKHR 
         .pAttachments = &color_blend_attachment,
     };
 
-    std::array<VkDynamicState, 2> dynamic_states = {
+    VkDynamicState dynamic_states[2] = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR,
     };
     VkPipelineDynamicStateCreateInfo dynamic_state {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
-        .pDynamicStates = dynamic_states.data(),
+        .dynamicStateCount = 2,
+        .pDynamicStates = dynamic_states,
     };
 
-    VkPipelineLayoutCreateInfo pipeline_layout_create_info {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 1,
-        .pSetLayouts = &descriptor_set_layout,
-    };
-
-    vkCreatePipelineLayout(device->logical, &pipeline_layout_create_info, nullptr, pipeline->layout);
-
-    VkPipelineDepthStencilStateCreateInfo depth_stencil {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = VK_TRUE,
-        .depthCompareOp = VK_COMPARE_OP_LESS,
-        .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_FALSE
-    };
     VkPipelineRenderingCreateInfo rendering_create_info {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, .colorAttachmentCount = 1, .pColorAttachmentFormats = &swapchain_surface_format.format, .depthAttachmentFormat = depth_format
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .colorAttachmentCount = 1,
+        .pColorAttachmentFormats = &swapchain_surface_format.format,
+        .depthAttachmentFormat = depth_format,
     };
     VkGraphicsPipelineCreateInfo pipeline_create_info {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -132,19 +145,21 @@ bool gfx::CreateGraphicsPipeline(const Device* device, const VkSurfaceFormatKHR 
         .pDepthStencilState = &depth_stencil,
         .pColorBlendState = &color_blend_state,
         .pDynamicState = &dynamic_state,
-        .layout = *pipeline->layout,
+        .layout = pipeline->layout,
         .renderPass = nullptr,
     };
 
-    return vkCreateGraphicsPipelines(device->logical, nullptr, 1, &pipeline_create_info, nullptr, pipeline->pipeline);
+    if (vkCreateGraphicsPipelines(logical_device, nullptr, 1, &pipeline_create_info, nullptr, &pipeline->handle)) {
+        evoLog(PrintSeverity::Fatal, "Failed creating graphics pipeline");
+        return false;
+    }
+
+    evoLog(PrintSeverity::Info, "Created graphics pipeline");
+    return true;
 }
 
 void gfx::DestroyGraphicsPipeline(const VkDevice logical_device, Pipeline* pipeline) {
-    vkDestroyPipeline(logical_device, *pipeline->pipeline, nullptr);
-    *pipeline->pipeline = nullptr;
-}
-
-void gfx::DestroyPipelineLayout(const VkDevice logical_device, Pipeline* pipeline) {
-    vkDestroyPipelineLayout(logical_device, *pipeline->layout, nullptr);
-    *pipeline->pipeline = nullptr;
+    vkDestroyPipeline(logical_device, pipeline->handle, nullptr);
+    pipeline->handle = nullptr;
+    evoLog(PrintSeverity::Debug, "Detroyed graphics pipeline");
 }

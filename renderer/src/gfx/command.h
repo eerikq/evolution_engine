@@ -3,29 +3,17 @@
 #include <volk.h>
 
 namespace gfx {
+    struct Frame;
     struct Device;
 
-    struct CommandDesc {
-        static constexpr uint32_t buffer_count = 3;
-    };
+    bool CreateCommandPool(const Device* device, Frame* frame);
+    void DestroyCommandPool(const VkDevice logical_device, Frame* frame);
 
-    struct Command {
-        CommandDesc desc;
+    bool AllocateCommandBuffer(const VkDevice logical_device, Frame* frame);
+    void FreeCommandBuffer(const VkDevice logical_device, Frame* frame);
 
-        VkCommandPool pool;
-        VkCommandBuffer buffers[CommandDesc::buffer_count];
-    };
-
-    bool CreateCommandPool(const Device* device, Command* command);
-    void DestroyCommandPool(const Device* device, Command* command);
-
-    bool AllocateCommandBuffers(const Device* device, Command* command);
-    void FreeCommandBuffers(const Device* device, Command* command);
-
-    // this shit gotta go man, what the hell
-    // void commandRecordBuffer(
-    //     const uint32_t frame_index, const uint32_t image_index, const VkCommandBuffer* command_buffers, const VkImage* swapchain_images, const VkImageView* swapchain_image_views,
-    //     const VkImage* depth_image, const VkImageView* depth_image_view, const VkPipeline graphics_pipeline, const VkPipelineLayout pipeline_layout, const VkDescriptorSet* descriptor_sets,
-    //     const VkExtent2D swapchain_extent, const VkBuffer* vertex_buffer, const VkBuffer* index_buffer, const uint32_t index_buffer_size
-    // );
+    void CmdTransitionImageLayout(
+        const VkCommandBuffer command_buffer, const VkImage image, const VkImageLayout old_layout, const VkImageLayout new_layout, const VkPipelineStageFlags2 src_stage_mask,
+        const VkPipelineStageFlags2 dst_stage_mask, const VkAccessFlags2 src_access_mask, const VkAccessFlags2 dst_access_mask, const VkImageAspectFlags aspect_flags
+    );
 } // namespace gfx

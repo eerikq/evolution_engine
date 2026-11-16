@@ -41,18 +41,7 @@ add_requires("imgui v1.92.7-docking", {
 target("evolution_renderer")
     set_kind("static")
 
-    add_files("renderer/src/renderer.cpp")
-    add_files("renderer/src/platform/platform_sdl3.cpp")
-    add_files("renderer/src/gfx/instance.cpp")
-    add_files("renderer/src/gfx/device.cpp")
-    add_files("renderer/src/gfx/vma.cpp")
-    add_files("renderer/src/gfx/swapchain.cpp")
-    add_files("renderer/src/gfx/command.cpp")
-    add_files("renderer/src/gfx/descriptor.cpp")
-    add_files("renderer/src/gfx/pipeline.cpp")
-    add_files("renderer/src/gfx/resources/buffer.cpp")
-    add_files("renderer/src/gfx/resources/texture.cpp")
-
+    add_files("renderer/src/**.cpp")
     add_includedirs("renderer/src")
     add_includedirs("renderer/include", { public = true })
 
