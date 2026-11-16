@@ -2,7 +2,6 @@
 
 #include "core/log.h"
 #include "gfx/vma.h"
-#include "vulkan/vulkan_core.h"
 
 #include <cstring>
 #include <vector>
@@ -224,6 +223,6 @@ void gfx::DestroyLogicalDevice(Device* device) {
 //     vkGetPhysicalDeviceFeatures2(physical_device, features);
 // }
 
-void gfx::GetLogicalQueue(Device* device, const uint32_t queue_index) {
-    vkGetDeviceQueue(device->logical, device->queue_family_index, queue_index, &device->graphics_queue);
+void gfx::GetLogicalQueue(Device* device, const uint32_t* queue_index) {
+    vkGetDeviceQueue(device->logical, device->queue_family_index, *queue_index, &device->graphics_queue);
 }

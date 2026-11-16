@@ -1,3 +1,4 @@
+/*
 #include "uniform.h"
 
 #include "types/ubo.h"
@@ -7,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // don't need this
-/*
 VkResult CreateBuffers(const VmaAllocator allocator, Buffer* uniform_buffers, void** uniform_buffers_mapped) {
     for (uint32_t i = 0; i < EngineConfig::max_frames_in_flight; i++) {
         buffer::Create(
@@ -20,8 +20,7 @@ VkResult CreateBuffers(const VmaAllocator allocator, Buffer* uniform_buffers, vo
 
     return VK_SUCCESS;
 }
-*/
-void gfx::UpdateUniformBuffers(const ShaderVariables variables, const int frame_index, const VkExtent2D swapchain_extent, void** uniform_buffers_mapped) {
+void gfx::UpdateUniformBuffer(UniformBufferObject ubo, void** uniform_buffers_mapped) {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -47,5 +46,6 @@ void gfx::UpdateUniformBuffers(const ShaderVariables variables, const int frame_
         variables.sun_intensity,
     };
 
-    memcpy(uniform_buffers_mapped[frame_index], &ubo, sizeof(ubo));
+    memcpy(uniform_buffers_mapped, &ubo, sizeof(ubo));
 }
+*/

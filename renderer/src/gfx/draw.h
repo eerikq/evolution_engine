@@ -1,9 +1,21 @@
 #pragma once
 
-#include "shader_variables.h"
+#include "gfx/resources/buffer.h"
 
 #include <volk.h>
 
+namespace gfx {
+    struct Frame {
+        VkCommandPool command_pool;
+        VkCommandBuffer command_buffer;
+        VkDescriptorSet descriptor_set;
+        VkSemaphore present_complete_semaphore;
+        VkFence in_flight_fence;
+        Buffer uniform_buffer;
+    };
+}; // namespace gfx
+
+/*
 void drawFrame(
     int* frame_index,
     const VkDevice logical_device,
@@ -28,3 +40,4 @@ void drawFrame(
     const uint32_t index_buffer_size,
     const ShaderVariables shader_variables
 );
+*/

@@ -3,31 +3,37 @@
 #include "core/log.h"
 
 bool gfx::CreateBuffer(const VmaAllocator allocator, const BufferDesc* desc, Buffer* buffer) {
-    VkBufferCreateInfo buffer_info = {
+    VkBufferCreateInfo buffer_create_info = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = desc->size,
         .usage = desc->buffer_flags,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
-    VmaAllocationCreateInfo allocation_info = {
+    VmaAllocationCreateInfo allocation_create_info = {
         .flags = desc->allocation_flags,
         .usage = VMA_MEMORY_USAGE_AUTO,
     };
 
-    if (vmaCreateBuffer(allocator, &buffer_info, &allocation_info, &buffer->data, &buffer->allocation, nullptr)) {
+    VmaAllocationInfo allocation_info;
+    if (vmaCreateBuffer(allocator, &buffer_create_info, &allocation_create_info, &buffer->handle, &buffer->allocation, &allocation_info)) {
         evoLog(PrintSeverity::Debug, "Failed to create buffer");
         return false;
     }
+
+    buffer->mapped_data = allocation_info.pMappedData;
+    buffer->size = allocation_info.size;
 
     evoLog(PrintSeverity::Debug, "Created buffer");
     return true;
 }
 
 void gfx::DestroyBuffer(const VmaAllocator allocator, Buffer* buffer) {
-    vmaDestroyBuffer(allocator, buffer->data, buffer->allocation);
+    vmaDestroyBuffer(allocator, buffer->handle, buffer->allocation);
 
-    buffer->data = nullptr;
+    buffer->handle = nullptr;
+    buffer->mapped_data = nullptr;
     buffer->allocation = nullptr;
+    buffer->size = 0;
 }
 
 /*

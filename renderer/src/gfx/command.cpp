@@ -2,15 +2,17 @@
 
 #include "core/log.h"
 #include "gfx/device.h"
+#include "gfx/draw.h"
+#include "renderer_config.h"
 
-bool gfx::CreateCommandPool(const Device* device, Command* command) {
+bool gfx::CreateCommandPool(const Device* device, Frame* frame) {
     VkCommandPoolCreateInfo create_info {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
         .queueFamilyIndex = device->queue_family_index,
     };
 
-    if (vkCreateCommandPool(device->logical, &create_info, nullptr, &command->pool)) {
+    if (vkCreateCommandPool(device->logical, &create_info, nullptr, &frame->command_pool)) {
         evoLog(PrintSeverity::Fatal, "Failed to create command pool");
         return false;
     }
@@ -19,44 +21,49 @@ bool gfx::CreateCommandPool(const Device* device, Command* command) {
     return true;
 }
 
-void gfx::DestroyCommandPool(const Device* device, Command* command) {
-    vkDestroyCommandPool(device->logical, command->pool, nullptr);
-    command->pool = nullptr;
+void gfx::DestroyCommandPool(const VkDevice logical_device, Frame* frame) {
+    vkDestroyCommandPool(logical_device, frame->command_pool, nullptr);
+    frame->command_pool = nullptr;
 
     evoLog(PrintSeverity::Debug, "Destroyed command pool");
 }
 
-bool gfx::AllocateCommandBuffers(const Device* device, Command* command) {
+bool gfx::AllocateCommandBuffer(const VkDevice logical_device, Frame* frame) {
     VkCommandBufferAllocateInfo create_info {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = command->pool,
+        .commandPool = (frame->command_pool),
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = command->desc.buffer_count,
+        .commandBufferCount = 1,
     };
 
-    if (vkAllocateCommandBuffers(device->logical, &create_info, command->buffers)) {
-        evoLog(PrintSeverity::Fatal, "Failed to allocate command buffers");
+    if (vkAllocateCommandBuffers(logical_device, &create_info, &frame->command_buffer)) {
+        evoLog(PrintSeverity::Fatal, "Failed to allocate command buffer");
         return false;
     }
 
-    evoLog(PrintSeverity::Info, "Allocated command buffers");
+    evoLog(PrintSeverity::Info, "Allocated command buffer");
     return true;
 }
 
-void gfx::FreeCommandBuffers(const Device* device, Command* command) {
-    vkFreeCommandBuffers(device->logical, command->pool, command->desc.buffer_count, command->buffers);
-    for (uint32_t i = 0; i < command->desc.buffer_count; i++) {
-        command->buffers[i] = nullptr;
+void gfx::FreeCommandBuffer(const VkDevice logical_device, Frame* frame) {
+    for (int i = 0; i < config::FRAMES_IN_FLIGHT; i++) {
+        vkFreeCommandBuffers(logical_device, frame->command_pool, 1, &frame->command_buffer);
+        frame->command_buffer = nullptr;
     }
+
+    evoLog(PrintSeverity::Debug, "Freed command buffers");
 }
 
-// rest is getting removed probably
-/*
 static void transition_image_layout(
-    const VkCommandBuffer* command_buffers, const VkImage* swapchain_images, const uint32_t frame_index, const uint32_t image_index, VkImageLayout old_layout, VkImageLayout new_layout,
-    VkAccessFlags2 src_access_mask, VkAccessFlags2 dst_access_mask, VkPipelineStageFlags2 src_stage_mask, VkPipelineStageFlags2 dst_stage_mask, VkImageAspectFlags aspect_flags
+    VkImageLayout old_layout, VkImageLayout new_layout, VkAccessFlags2 src_access_mask, VkAccessFlags2 dst_access_mask, VkImageAspectFlags aspect_flags
+
+);
+
+void gfx::CmdTransitionImageLayout(
+    const VkCommandBuffer command_buffer, const VkImage image, const VkImageLayout old_layout, const VkImageLayout new_layout, const VkPipelineStageFlags2 src_stage_mask,
+    const VkPipelineStageFlags2 dst_stage_mask, const VkAccessFlags2 src_access_mask, const VkAccessFlags2 dst_access_mask, const VkImageAspectFlags aspect_flags
 ) {
-    VkImageMemoryBarrier2 barrier {
+    VkImageMemoryBarrier2 barrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .srcStageMask = src_stage_mask,
         .srcAccessMask = src_access_mask,
@@ -66,7 +73,7 @@ static void transition_image_layout(
         .newLayout = new_layout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = swapchain_images[image_index],
+        .image = image,
         .subresourceRange = {
             .aspectMask = aspect_flags,
             .baseMipLevel = 0,
@@ -82,9 +89,11 @@ static void transition_image_layout(
         .pImageMemoryBarriers = &barrier,
     };
 
-    vkCmdPipelineBarrier2(command_buffers[frame_index], &dependency_info);
+    vkCmdPipelineBarrier2(command_buffer, &dependency_info);
 }
 
+// rest is getting removed probably
+/*
 void commandRecordBuffer(
     const uint32_t frame_index, const uint32_t image_index, const VkCommandBuffer* command_buffers, const VkImage* swapchain_images, const VkImageView* swapchain_image_views,
     const VkImage* depth_image, const VkImageView* depth_image_view, const VkPipeline graphics_pipeline, const VkPipelineLayout pipeline_layout, const VkDescriptorSet* descriptor_sets,
@@ -174,4 +183,4 @@ void commandRecordBuffer(
         VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT
     );
 }
- */
+*/

@@ -6,12 +6,6 @@ namespace platform {
 
 namespace renderer {
     struct RendererDesc {
-        const int max_frames_in_flight = 2;
-#ifdef NDEBUG
-        const bool enable_validation_layers = true;
-#else
-        const bool enable_validation_layers = false;
-#endif
         const char* required_validation_layers[1] = {
             "VK_LAYER_KHRONOS_validation",
         };
@@ -22,8 +16,20 @@ namespace renderer {
 
     struct Renderer;
 
+    struct Camera {
+        float pos_x = 0, pos_y = 0, pos_z = 0;
+        float yaw = 0, pitch = 0;
+
+        float fov = 90.0;
+        float aspect_ratio = 4.0 / 3.0;
+        float near_plane = 0.1;
+        float far_plane = 1000;
+
+        bool is_perspective = true;
+    };
+
     bool Create(Renderer* resources, platform::Window* window);
-    void DrawFrame();
+    void DrawFrame(Renderer* resources, platform::Window* window);
     bool Resize(Renderer* resources, platform::Window* window);
     void Destroy(Renderer* resources, platform::Window* window);
 }; // namespace renderer

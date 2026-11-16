@@ -5,8 +5,8 @@ VK_DEFINE_HANDLE(VmaAllocator)
 
 namespace gfx {
     struct DeviceDesc {
-        const uint32_t device_extensions_count;
-        const char* device_extensions;
+        const uint32_t device_extensions_count = 0;
+        const char* device_extensions = "";
 
         const uint32_t desired_depth_formats_count = 3;
         const VkFormat desired_depth_formats[3] = {
@@ -14,8 +14,8 @@ namespace gfx {
             VK_FORMAT_D32_SFLOAT_S8_UINT,
             VK_FORMAT_D24_UNORM_S8_UINT,
         };
-        const VkImageTiling desired_depth_tiling;
-        const VkFormatFeatureFlags desired_depth_features;
+        const VkImageTiling desired_depth_tiling = VK_IMAGE_TILING_OPTIMAL;
+        const VkFormatFeatureFlags desired_depth_features = 0;
     };
 
     struct Device {
@@ -23,6 +23,7 @@ namespace gfx {
         VkDevice logical = nullptr;
         VkQueue graphics_queue = nullptr;
         uint32_t queue_family_index = 0;
+
         VmaAllocator allocator = nullptr;
         VkFormat depth_foramt = VK_FORMAT_UNDEFINED;
 
@@ -51,7 +52,7 @@ namespace gfx {
     bool CreateLogicalDevice(Device* device, const DeviceDesc* desc, const VkSurfaceKHR surface);
     void DestroyLogicalDevice(Device* device);
 
-    void GetLogicalQueue(Device* device, const uint32_t queue_index = 0);
+    void GetLogicalQueue(Device* device, const uint32_t* queue_index);
 
     // void GetPhysicalProperties(const VkPhysicalDevice physical_device, VkPhysicalDeviceProperties2* properties);
     // void GetPhysicalFeatures(const VkPhysicalDevice physical_device, VkPhysicalDeviceFeatures2* properties);
