@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gfx/resources/buffer.h"
+#include "gfx/resources.h"
 
 #include <volk.h>
 
