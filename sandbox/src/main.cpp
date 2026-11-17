@@ -301,7 +301,7 @@ int main() {
         };
         if (!renderer::Create(renderer_resources, &window)) return EXIT_FAILURE;
 
-        if (!renderer::CreateResources(renderer_resources)) return EXIT_FAILURE;
+        renderer::CreateResources(renderer_resources);
 
         while (!window.should_close) {
             platform::PollEvents(&window);

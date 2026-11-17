@@ -30,7 +30,7 @@ namespace renderer {
 
     bool Create(Renderer* resources, platform::Window* window);
 
-    bool CreateResources(Renderer* resources);
+    void CreateResources(Renderer* resources);
     void DestroyResources(Renderer* resources);
 
     void DrawFrame(Renderer* resources, platform::Window* window);
