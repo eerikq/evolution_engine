@@ -282,6 +282,7 @@
 
 int main() {
     try {
+
         platform::Window window;
         platform::WindowDesc window_descriptor = {
             .app_name = "Evolution Engine",
@@ -294,34 +295,34 @@ int main() {
         if (!platform::Init(&window_descriptor)) return EXIT_FAILURE;
         if (!platform::CreateWindow(&window, &window_descriptor)) return EXIT_FAILURE;
 
-        renderer::Renderer* renderer_resources = nullptr;
-        renderer::RendererDesc renderer_desc {
-            // .required_validation_layers = {"VK_LAYER_KHRONOS_validation"},
-            // .required_device_extensions = {"VK_KHR_swapchain"},
+        renderer::RendererDesc renderer_desc = {
+            .required_validation_layers = {"VK_LAYER_KHRONOS_validation"},
+            .required_device_extensions = {"VK_KHR_swapchain"},
         };
-        if (!renderer::Create(renderer_resources, &window)) return EXIT_FAILURE;
+        renderer::Renderer* renderer = nullptr;
+        if (!renderer::Create(&window, &renderer_desc, &renderer)) return EXIT_FAILURE;
 
-        renderer::CreateResources(renderer_resources);
+        renderer::CreateResources(renderer);
 
         while (!window.should_close) {
             platform::PollEvents(&window);
 
             if (window.was_resized) {
                 platform::ResizeWindow(&window);
-                renderer::Resize(renderer_resources, &window);
+                renderer::Resize(&window, renderer);
             }
 
-            renderer::DrawFrame(renderer_resources, &window);
+            renderer::DrawFrame(&window, renderer);
         }
 
-        renderer::DestroyResources(renderer_resources);
+        renderer::DestroyResources(renderer);
 
-        renderer::Destroy(renderer_resources, &window);
+        renderer::Destroy(&window, &renderer);
 
         platform::DestroyWindow(&window);
         platform::Quit();
     } catch (const std::exception& e) {
-        std::printf("{%s}", e.what());
+        std::printf("Exception: {%s}", e.what());
         return EXIT_FAILURE;
     }
 

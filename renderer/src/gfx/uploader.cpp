@@ -1,5 +1,29 @@
 #include "uploader.h"
 
+#include "resources.h"
+
+void gfx::CreateStagingBuffer(const Uploader* uploader, const VkDeviceSize size, Buffer* staging_buffer) {
+    BufferDesc buffer_desc = {
+        .size = size,
+        .buffer_flags = 0,
+        .allocation_flags = 0,
+    };
+    gfx::CreateBuffer(uploader->allocator, &buffer_desc, staging_buffer);
+}
+void gfx::CopyBetweenBuffers(const Uploader* uploader, const VkDeviceSize size, Buffer* src_buffer, Buffer* dst_buffer, const VkDeviceSize src_offset, const VkDeviceSize dst_offset) {
+    //
+}
+
+void gfx::CopyDataToBuffer(const Uploader* uploader, const void* data, const VkDeviceSize size, Buffer* staging_buffer, Buffer* buffer, const VkDeviceSize offset) {
+    //
+}
+void gfx::CopyDataToTexture(const Uploader* uploader, const void* data, const VkDeviceSize size, Buffer* staging_buffer, Texture* texture, const VkDeviceSize offset) {
+
+    // vmaMapMemory(allocator, staging_buffer->allocation, &staging_buffer->mapped_data);
+    // memcpy(data, image->data, image->size);
+    // vmaUnmapMemory(allocator, staging_buffer.allocation);
+}
+
 /*
 bool gfx::LoadImage(const VkDevice logical_device, const VkQueue graphics_queue, const VkCommandPool command_pool, const VmaAllocator allocator, const Image* image, Texture* texture) {
     Buffer staging_buffer = {};

@@ -54,44 +54,6 @@ void gfx::FreeCommandBuffer(const VkDevice logical_device, Frame* frame) {
     evoLog(PrintSeverity::Debug, "Freed command buffers");
 }
 
-static void transition_image_layout(
-    VkImageLayout old_layout, VkImageLayout new_layout, VkAccessFlags2 src_access_mask, VkAccessFlags2 dst_access_mask, VkImageAspectFlags aspect_flags
-
-);
-
-void gfx::CmdTransitionImageLayout(
-    const VkCommandBuffer command_buffer, const VkImage image, const VkImageLayout old_layout, const VkImageLayout new_layout, const VkPipelineStageFlags2 src_stage_mask,
-    const VkPipelineStageFlags2 dst_stage_mask, const VkAccessFlags2 src_access_mask, const VkAccessFlags2 dst_access_mask, const VkImageAspectFlags aspect_flags
-) {
-    VkImageMemoryBarrier2 barrier = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .srcStageMask = src_stage_mask,
-        .srcAccessMask = src_access_mask,
-        .dstStageMask = dst_stage_mask,
-        .dstAccessMask = dst_access_mask,
-        .oldLayout = old_layout,
-        .newLayout = new_layout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image,
-        .subresourceRange = {
-            .aspectMask = aspect_flags,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        }
-    };
-    VkDependencyInfo dependency_info = {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .dependencyFlags = {},
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &barrier,
-    };
-
-    vkCmdPipelineBarrier2(command_buffer, &dependency_info);
-}
-
 // rest is getting removed probably
 /*
 void commandRecordBuffer(
