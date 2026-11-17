@@ -1,7 +1,7 @@
 #include "uploader.h"
 
+/*
 bool gfx::LoadImage(const VkDevice logical_device, const VkQueue graphics_queue, const VkCommandPool command_pool, const VmaAllocator allocator, const Image* image, Texture* texture) {
-    /*
     Buffer staging_buffer = {};
     buffer::Create(
         image->size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, allocator, &staging_buffer
@@ -67,5 +67,5 @@ bool gfx::LoadImage(const VkDevice logical_device, const VkQueue graphics_queue,
     vkFreeCommandBuffers(logical_device, command_pool, 1, &temp_command_buffer);
 
     return VK_SUCCESS; // simplified return, doesn't know where it failed (it also can't lol). not important right now
-    */
 }
+*/
