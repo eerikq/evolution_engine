@@ -36,6 +36,10 @@ namespace gfx {
 
     bool CreateTexture(const VkDevice logical_device, const VmaAllocator allocator, const TextureDesc* desc, Texture* texture);
     void DestroyTexture(const VkDevice logical_device, const VmaAllocator allocator, Texture* texture);
+    void CmdTransitionImageLayout(
+        const VkCommandBuffer command_buffer, const VkImage image, const VkImageLayout old_layout, const VkImageLayout new_layout, const VkPipelineStageFlags2 src_stage_mask,
+        const VkPipelineStageFlags2 dst_stage_mask, const VkAccessFlags2 src_access_mask, const VkAccessFlags2 dst_access_mask, const VkImageAspectFlags aspect_flags
+    );
 
     bool CreateTextureView(const VkDevice logical_device, const VkFormat texture_format, const VkImageAspectFlags aspect_flags, Texture* texture);
     void DestroyTextureView(const VkDevice logical_device, Texture* texture);

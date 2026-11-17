@@ -6,7 +6,7 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
-bool gfx::CreateAllocator(gfx::Device* device, const VkInstance instance) {
+bool gfx::CreateAllocator(const Device* device, const VkInstance instance, VmaAllocator* allocator) {
     VmaVulkanFunctions vulkan_functions = {
         .vkGetInstanceProcAddr = vkGetInstanceProcAddr,
         .vkGetDeviceProcAddr = vkGetDeviceProcAddr,
@@ -21,7 +21,7 @@ bool gfx::CreateAllocator(gfx::Device* device, const VkInstance instance) {
         .vulkanApiVersion = VK_API_VERSION_1_4,
     };
 
-    if (vmaCreateAllocator(&create_info, &device->allocator)) {
+    if (vmaCreateAllocator(&create_info, allocator)) {
         evoLog(PrintSeverity::Fatal, "Failed to create Vulkan Memory Allocator");
         return false;
     }
@@ -30,7 +30,7 @@ bool gfx::CreateAllocator(gfx::Device* device, const VkInstance instance) {
     return true;
 }
 
-void gfx::DestroyAllocator(Device* device) {
-    vmaDestroyAllocator(device->allocator);
+void gfx::DestroyAllocator(VmaAllocator* allocator) {
+    vmaDestroyAllocator(*allocator);
     evoLog(PrintSeverity::Debug, "Destroyed Vulkan Memory Allocator");
 }

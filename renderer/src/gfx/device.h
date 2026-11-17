@@ -24,7 +24,6 @@ namespace gfx {
         VkQueue graphics_queue = nullptr;
         uint32_t queue_family_index = 0;
 
-        VmaAllocator allocator = nullptr;
         VkFormat depth_foramt = VK_FORMAT_UNDEFINED;
 
         VkPhysicalDeviceExtendedDynamicStateFeaturesEXT features_dynamic {

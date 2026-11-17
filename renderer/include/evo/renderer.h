@@ -6,12 +6,8 @@ namespace platform {
 
 namespace renderer {
     struct RendererDesc {
-        const char* required_validation_layers[1] = {
-            "VK_LAYER_KHRONOS_validation",
-        };
-        const char* required_device_extensions[1] = {
-            "VK_KHR_swapchain",
-        };
+        const char* required_validation_layers[1] = {};
+        const char* required_device_extensions[1] = {};
     };
 
     struct Renderer;
@@ -28,12 +24,12 @@ namespace renderer {
         bool is_perspective = true;
     };
 
-    bool Create(Renderer* resources, platform::Window* window);
+    bool Create(const platform::Window* window, const RendererDesc* desc, Renderer** renderer_handle);
+    void Destroy(platform::Window* window, Renderer** renderer_handle);
 
-    void CreateResources(Renderer* resources);
-    void DestroyResources(Renderer* resources);
+    void CreateResources(Renderer* renderer);
+    void DestroyResources(Renderer* renderer);
 
-    void DrawFrame(Renderer* resources, platform::Window* window);
-    bool Resize(Renderer* resources, platform::Window* window);
-    void Destroy(Renderer* resources, platform::Window* window);
+    void DrawFrame(const platform::Window* window, Renderer* renderer);
+    bool Resize(const platform::Window* window, Renderer* renderer);
 }; // namespace renderer
