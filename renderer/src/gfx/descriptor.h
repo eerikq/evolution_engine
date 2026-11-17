@@ -12,9 +12,8 @@ namespace gfx {
 
     bool CreateDescriptorPool(const VkDevice logical_device, Pipeline* pipeline);
     void DestroyDescriptorPool(const VkDevice logical_device, Pipeline* pipeline);
-    /*
-    bool CreateDescriptorSets(const VkDevice logical_device, const Pipeline* pipeline, Frame* frame);
-    void ConfigureDescriptorSets(const VkDevice logical_device, const gfx::Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Pipeline* pipeline);
-    void DestroyDescriptorSets(const VkDevice logical_device, const Pipeline* pipeline, Frame* frame);
-    */
+
+    bool AllocateDescriptorSets(const VkDevice logical_device, const Pipeline* pipeline, VkDescriptorSet* descriptor_sets, const uint32_t descriptor_set_count = 1);
+    // void ConfigureDescriptorSets(const VkDevice logical_device, const gfx::Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Pipeline* pipeline);
+    void FreeDescriptorSets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, VkDescriptorSet* descriptor_sets, const uint32_t descriptor_set_count = 1);
 } // namespace gfx

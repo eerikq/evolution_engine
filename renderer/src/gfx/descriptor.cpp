@@ -1,9 +1,9 @@
 #include "descriptor.h"
 
 #include "core/log.h"
-#include "gfx/draw.h"
 #include "gfx/pipeline.h"
 #include "renderer_config.h"
+#include "vulkan/vulkan_core.h"
 
 bool gfx::CreateDescriptorSetLayout(const VkDevice logical_device, Pipeline* pipeline) {
     VkDescriptorSetLayoutBinding ubo_layout_binding = {
@@ -84,16 +84,15 @@ void gfx::DestroyDescriptorPool(const VkDevice logical_device, Pipeline* pipelin
     evoLog(PrintSeverity::Debug, "Destroyed descriptor pool");
 }
 
-/*
-bool gfx::CreateDescriptorSets(const VkDevice logical_device, const Pipeline* pipeline, Frame* frame) {
+bool gfx::AllocateDescriptorSets(const VkDevice logical_device, const Pipeline* pipeline, VkDescriptorSet* descriptor_sets, const uint32_t descriptor_set_count) {
     VkDescriptorSetAllocateInfo alloc_info {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool = pipeline->descriptor_pool,
-        .descriptorSetCount = config::FRAMES_IN_FLIGHT,
+        .descriptorSetCount = descriptor_set_count,
         .pSetLayouts = &pipeline->descriptor_set_layout,
     };
 
-    if (vkAllocateDescriptorSets(logical_device, &alloc_info, frame->descriptor_sets)) {
+    if (vkAllocateDescriptorSets(logical_device, &alloc_info, descriptor_sets)) {
         evoLog(PrintSeverity::Fatal, "Failed to allocate descriptor sets");
         return false;
     }
@@ -102,6 +101,7 @@ bool gfx::CreateDescriptorSets(const VkDevice logical_device, const Pipeline* pi
     return true;
 }
 
+/*
 void gfx::ConfigureDescriptorSets(const VkDevice logical_device, const Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Pipeline* descriptor) {
     for (size_t i = 0; i < config::FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo buffer_info {
@@ -140,8 +140,8 @@ void gfx::ConfigureDescriptorSets(const VkDevice logical_device, const Buffer* u
         vkUpdateDescriptorSets(logical_device, 2, descriptor_writes, 0, nullptr);
     }
 }
+*/
 
-void DestroyDescriptorSets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, const uint32_t descriptor_set_count, VkDescriptorSet* descriptor_sets) {
+void gfx::FreeDescriptorSets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, VkDescriptorSet* descriptor_sets, const uint32_t descriptor_set_count) {
     vkFreeDescriptorSets(logical_device, descriptor_pool, descriptor_set_count, descriptor_sets);
 }
-*/

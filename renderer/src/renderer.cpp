@@ -7,15 +7,13 @@
 #include "gfx/draw.h"
 #include "gfx/instance.h"
 #include "gfx/pipeline.h"
-#include "gfx/resources/buffer.h"
-#include "gfx/resources/texture.h"
+#include "gfx/resources.h"
 #include "gfx/swapchain.h"
 #include "gfx/vma.h"
 #include "platform/platform_sdl3_vulkan.h"
 #include "renderer_config.h"
 #include "types/ubo.h"
 #include "types/vertex.h"
-#include "vulkan/vulkan_core.h"
 
 #include <evo/platform.h>
 #include <evo/renderer.h>
@@ -42,6 +40,7 @@ struct renderer::Renderer {
     gfx::Device device;
     gfx::Swapchain swapchain;
     gfx::Pipeline pipeline;
+    // uploader
 
     uint32_t current_frame = 0;
     gfx::Frame frames[config::FRAMES_IN_FLIGHT];
@@ -165,25 +164,26 @@ bool renderer::Create(Renderer* resources, platform::Window* window) {
 }
 
 // temporary place just to store resource loading for course loading
-bool renderer::CreateResources(Renderer* resources) {
+void renderer::CreateResources(Renderer* resources) {
     model::Load("assets/viking_room.obj", &renderer_resources.vertex_array, &renderer_resources.index_array);
 
+    // vertex buffer
     gfx::BufferDesc vertex_buffer_desc = {
         .size = sizeof(renderer_resources.vertex_array[0]) * renderer_resources.vertex_array.size(),
         .buffer_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         .allocation_flags = 0,
     };
     gfx::CreateBuffer(renderer_resources.device.allocator, &vertex_buffer_desc, &renderer_resources.vertex_buffer);
-    // write to buffer
 
+    // index buffer
     gfx::BufferDesc index_buffer_desc = {
         .size = sizeof(renderer_resources.index_array[0]) * renderer_resources.index_array.size(),
         .buffer_flags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         .allocation_flags = 0,
     };
     gfx::CreateBuffer(renderer_resources.device.allocator, &vertex_buffer_desc, &renderer_resources.vertex_buffer);
-    // write to buffer
 
+    // texture
     image::LoadFromFile("assets/viking_room.png", &renderer_resources.image);
     gfx::TextureDesc texture_desc = {
         .width = static_cast<uint32_t>(renderer_resources.image.width),
@@ -193,39 +193,66 @@ bool renderer::CreateResources(Renderer* resources) {
         .allocation_flags = 0,
     };
     gfx::CreateTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &texture_desc, &renderer_resources.texture);
-    // write to texture (based on image data)
     gfx::CreateTextureView(renderer_resources.device.logical, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, &renderer_resources.texture);
 
-    VkSamplerCreateInfo create_info = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .magFilter = VK_FILTER_LINEAR,
-        .minFilter = VK_FILTER_LINEAR,
-        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .mipLodBias = 0.0f,
-        .anisotropyEnable = true,
-        .maxAnisotropy = renderer_resources.device.device_properties.properties.limits.maxSamplerAnisotropy,
-        .compareEnable = false,
-        .compareOp = VK_COMPARE_OP_ALWAYS,
-        .minLod = 0.0f,
-        .maxLod = 0.0f,
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-        .unnormalizedCoordinates = false,
+    // sampler
+    gfx::CreateSampler(renderer_resources.device.logical, &renderer_resources.device.device_properties, &renderer_resources.sampler);
+
+    gfx::CreateDescriptorPool(renderer_resources.device.logical, &renderer_resources.pipeline); // (required to allocate sets)
+    gfx::AllocateDescriptorSets(renderer_resources.device.logical, &renderer_resources.pipeline, &renderer_resources.frames[0].descriptor_set);
+    // might need to do gfx::ConfigureDescriptorSets(), which needs fixing as well
+
+    // prepare the command pool
+    vkResetCommandPool(renderer_resources.device.logical, renderer_resources.frames[0].command_pool, 0);
+    VkCommandBufferBeginInfo command_buffer_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
-    vkCreateSampler(renderer_resources.device.logical, &create_info, nullptr, &renderer_resources.sampler);
+    vkBeginCommandBuffer(renderer_resources.frames[0].command_buffer, &command_buffer_info);
 
-    // gfx::CreateDescriptorSets
-    // create descriptor sets
+    // do the actual buffer transfers to fill the texture and buffers.
+    // which requires creating texture and buffer handles above, filling them below and submitting them at the end
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    vertex_buffer_desc.buffer_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    vertex_buffer_desc.allocation_flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
-    return true;
+    gfx::Buffer vertex_staging_buffer;
+    gfx::CreateBuffer(renderer_resources.device.allocator, &vertex_buffer_desc, &vertex_staging_buffer);
+    // write to buffer
+
+    index_buffer_desc.buffer_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    index_buffer_desc.allocation_flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+    gfx::Buffer index_staging_buffer;
+    gfx::CreateBuffer(renderer_resources.device.allocator, &index_buffer_desc, &index_staging_buffer);
+    // write to buffer
+
+    gfx::BufferDesc texture_buffer_desc = {
+        .buffer_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .allocation_flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    };
+    gfx::Buffer texture_staging_buffer;
+    gfx::CreateBuffer(renderer_resources.device.allocator, &index_buffer_desc, &index_staging_buffer);
+    // write to texture
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    vkEndCommandBuffer(renderer_resources.frames[0].command_buffer);
+    VkSubmitInfo submit = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &renderer_resources.frames[0].command_buffer,
+    };
+    vkQueueSubmit(renderer_resources.device.graphics_queue, 1, &submit, nullptr);
+    vkQueueWaitIdle(renderer_resources.device.graphics_queue); // wait until submission is 100% complete
+    vkResetCommandPool(renderer_resources.device.logical, renderer_resources.frames[0].command_pool, 0);
 }
 void renderer::DestroyResources(Renderer* resources) {
-    // destroy descriptor sets
+    vkDeviceWaitIdle(renderer_resources.device.logical);
 
-    vkDestroySampler(renderer_resources.device.logical, renderer_resources.sampler, nullptr);
+    gfx::FreeDescriptorSets(renderer_resources.device.logical, renderer_resources.pipeline.descriptor_pool, &renderer_resources.frames[0].descriptor_set);
+    gfx::DestroyDescriptorPool(renderer_resources.device.logical, &renderer_resources.pipeline);
 
+    gfx::DestroySampler(renderer_resources.device.logical, &renderer_resources.sampler);
     gfx::DestroyTexture(renderer_resources.device.logical, renderer_resources.device.allocator, &renderer_resources.texture);
     image::Free(&renderer_resources.image);
 
