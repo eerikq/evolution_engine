@@ -11,11 +11,13 @@ else
     set_toolchains("clang")
 end
 
--- libraries
+------------------ packages ------------------
+add_repositories("local-repo xmake")
+
 add_requires("volk 1.4.335+0")
 add_requires("vulkan-headers 1.4.335+0")
 add_requires("vulkan-memory-allocator 3.3.0")
--- add_requires("slang 2026.16") -- don't think i need this?
+add_requires("slang 2026.14.1") -- local package
 
 add_requires("tinyobjloader")
 -- add_requires("cgltf 1.15") -- implement after obj importing works
@@ -35,41 +37,50 @@ add_requires("imgui v1.92.7-docking", {
     },
 })
 
+------------------ renderer ------------------
 target("evolution_renderer")
-    set_kind("binary")
-    add_files("src/**.cpp")
-    add_includedirs("src")
+    set_kind("static")
 
-    -- defines
-    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+    add_files("renderer/src/**.cpp")
+    add_includedirs("renderer/src")
+    add_includedirs("renderer/include", { public = true })
+
+    if is_mode("debug") then
+        add_defines("EVO_DEBUG")
+        add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+    end
+
     add_defines("SDL_MAIN_HANDLED")
     add_defines("VK_NO_PROTOTYPES")
+    add_defines("IMGUI_IMPL_VULKAN_USE_VOLK")
+    add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_FORCE_RADIANS")
+    add_defines("VMA_VULKAN_VERSION=1004000", "VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1")
 
-    -- build scripts
-    after_build(function(target)
+    add_packages("volk", "vulkan-headers", "vulkan-memory-allocator", "slang")
+    add_packages("tinyobjloader", "glm", "fmt", "stb")
+    add_packages("libsdl3", "imgui")
+target_end()
+
+------------------ sandbox ------------------
+target("evolution_sandbox")
+    set_kind("binary")
+    add_deps("evolution_renderer", { whole = true })
+
+    add_files("sandbox/src/**.cpp")
+    add_includedirs("sandbox/src")
+    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+
+    after_build( function (target)
         import("core.project.task")
 
         task.run("copy_assets")
         task.run("compile_shaders")
     end)
-
-    -- packages
-    add_packages("volk")
-    add_packages("vulkan-headers")
-    add_packages("vulkan-memory-allocator")
-
-    add_packages("tinyobjloader")
-
-    add_packages("glm")
-    add_packages("fmt")
-    add_packages("stb")
-
-    add_packages("libsdl3")
-    add_packages("imgui")
 target_end()
 
+------------------ tasks ------------------
 task("copy_assets")
-    on_run(function()
+    on_run( function ()
         local asset_path = path.join(os.projectdir(), "assets")
         local build_path = path.join(os.projectdir(), get_config("builddir"), os.host(), os.arch(), get_config("mode"))
 
@@ -79,7 +90,7 @@ task("copy_assets")
 task_end()
 
 task("compile_shaders")
-    on_run(function()
+    on_run( function ()
         local shader_name = "shader.slang"
         local shader_output = "slang.spv"
 
