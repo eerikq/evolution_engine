@@ -1,27 +1,65 @@
 #include "uploader.h"
 
+#include "core/log.h"
 #include "resources.h"
 
-void gfx::CreateStagingBuffer(const Uploader* uploader, const VkDeviceSize size, Buffer* staging_buffer) {
+#include <cassert>
+
+bool gfx::CreateStagingBuffer(const Uploader* uploader, const void* data, const VkDeviceSize size, Buffer* staging_buffer) {
     BufferDesc buffer_desc = {
         .size = size,
-        .buffer_flags = 0,
-        .allocation_flags = 0,
+        .buffer_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .allocation_flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
     };
-    gfx::CreateBuffer(uploader->allocator, &buffer_desc, staging_buffer);
-}
-void gfx::CopyBetweenBuffers(const Uploader* uploader, const VkDeviceSize size, Buffer* src_buffer, Buffer* dst_buffer, const VkDeviceSize src_offset, const VkDeviceSize dst_offset) {
-    //
+    if (!gfx::CreateBuffer(uploader->allocator, &buffer_desc, staging_buffer)) return false;
+
+    vmaCopyMemoryToAllocation(uploader->allocator, data, staging_buffer->allocation, 0, size);
+
+    // this ↑ apparently does the same as this ↓ but better in some way? pretty cool
+
+    // vmaMapMemory(uploader->allocator, staging_buffer->allocation, &staging_buffer->mapped_data);
+    // memcpy(staging_buffer->mapped_data, data, size);
+    // vmaUnmapMemory(uploader->allocator, staging_buffer->allocation);
+
+    return true;
 }
 
-void gfx::CopyDataToBuffer(const Uploader* uploader, const void* data, const VkDeviceSize size, Buffer* staging_buffer, Buffer* buffer, const VkDeviceSize offset) {
-    //
-}
-void gfx::CopyDataToTexture(const Uploader* uploader, const void* data, const VkDeviceSize size, Buffer* staging_buffer, Texture* texture, const VkDeviceSize offset) {
+void gfx::CmdCopyDataToBuffer(const Uploader* uploader, const Buffer* staging_buffer, Buffer* buffer, const VkDeviceSize src_offset, const VkDeviceSize dst_offset) {
+    VkBufferCopy buffer_copy_region = {
+        .srcOffset = src_offset,
+        .dstOffset = dst_offset,
+        .size = staging_buffer->size,
+    };
 
-    // vmaMapMemory(allocator, staging_buffer->allocation, &staging_buffer->mapped_data);
-    // memcpy(data, image->data, image->size);
-    // vmaUnmapMemory(allocator, staging_buffer.allocation);
+    vkCmdCopyBuffer(*uploader->command_buffer, staging_buffer->handle, buffer->handle, 1, &buffer_copy_region);
+}
+
+void gfx::CmdCopyDataToTexture(const Uploader* uploader, const Buffer* staging_buffer, Texture* texture) {
+    gfx::CmdTransitionImageLayout(
+        *uploader->command_buffer, texture->handle, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, 0,
+        VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_IMAGE_ASPECT_COLOR_BIT
+    );
+
+    VkBufferImageCopy region {
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = texture->extent
+    };
+    vkCmdCopyBufferToImage(*uploader->command_buffer, staging_buffer->handle, texture->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    gfx::CmdTransitionImageLayout(
+        *uploader->command_buffer, texture->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT, VK_IMAGE_ASPECT_COLOR_BIT
+    );
 }
 
 /*

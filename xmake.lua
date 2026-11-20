@@ -52,6 +52,7 @@ target("evolution_renderer")
 
     add_defines("SDL_MAIN_HANDLED")
     add_defines("VK_NO_PROTOTYPES")
+    add_defines("IMGUI_IMPL_VULKAN_USE_VOLK")
     add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_FORCE_RADIANS")
     add_defines("VMA_VULKAN_VERSION=1004000", "VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1")
 
@@ -67,7 +68,6 @@ target("evolution_sandbox")
 
     add_files("sandbox/src/**.cpp")
     add_includedirs("sandbox/src")
-
     add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
 
     after_build( function (target)

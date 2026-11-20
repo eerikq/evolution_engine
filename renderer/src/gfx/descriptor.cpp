@@ -2,8 +2,9 @@
 
 #include "core/log.h"
 #include "gfx/pipeline.h"
+#include "gfx/resources.h"
 #include "renderer_config.h"
-#include "vulkan/vulkan_core.h"
+#include "types/ubo.h"
 
 bool gfx::CreateDescriptorSetLayout(const VkDevice logical_device, Pipeline* pipeline) {
     VkDescriptorSetLayoutBinding ubo_layout_binding = {
@@ -101,46 +102,41 @@ bool gfx::AllocateDescriptorSets(const VkDevice logical_device, const Pipeline* 
     return true;
 }
 
-/*
-void gfx::ConfigureDescriptorSets(const VkDevice logical_device, const Buffer* uniform_buffers, const VkImageView texture_view, const VkSampler texture_sampler, Pipeline* descriptor) {
-    for (size_t i = 0; i < config::FRAMES_IN_FLIGHT; i++) {
-        VkDescriptorBufferInfo buffer_info {
-            .buffer = VkBuffer(),
-            .offset = 0,
-            .range = sizeof(1),
-        };
+void gfx::ConfigureDescriptorSet(const VkDevice logical_device, const Buffer* uniform_buffer, const VkImageView texture_view, const VkSampler texture_sampler, VkDescriptorSet* descriptor) {
+    VkDescriptorBufferInfo buffer_info = {
+        .buffer = uniform_buffer->handle,
+        .offset = 0,
+        .range = sizeof(UniformBufferObject),
+    };
+    VkDescriptorImageInfo image_info = {
+        .sampler = texture_sampler,
+        .imageView = texture_view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
 
-        VkDescriptorImageInfo image_info {
-            .sampler = texture_sampler,
-            .imageView = texture_view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
+    VkWriteDescriptorSet descriptor_writes[2] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = *descriptor,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = &buffer_info,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = *descriptor,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &image_info,
+        },
+    };
 
-        VkWriteDescriptorSet descriptor_writes[2] = {
-            {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor->set[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &buffer_info,
-            },
-            {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor->set[i],
-                .dstBinding = 1,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .pImageInfo = &image_info,
-            },
-        };
-
-        vkUpdateDescriptorSets(logical_device, 2, descriptor_writes, 0, nullptr);
-    }
+    vkUpdateDescriptorSets(logical_device, 2, descriptor_writes, 0, nullptr);
 }
-*/
 
 void gfx::FreeDescriptorSets(const VkDevice logical_device, const VkDescriptorPool descriptor_pool, VkDescriptorSet* descriptor_sets, const uint32_t descriptor_set_count) {
     vkFreeDescriptorSets(logical_device, descriptor_pool, descriptor_set_count, descriptor_sets);

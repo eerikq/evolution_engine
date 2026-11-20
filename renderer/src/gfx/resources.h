@@ -29,6 +29,7 @@ namespace gfx {
         VkImage handle = nullptr;
         VkImageView view = nullptr;
         VmaAllocation allocation = nullptr;
+        VkExtent3D extent = {};
     };
 
     bool CreateBuffer(const VmaAllocator allocator, const BufferDesc* desc, Buffer* buffer);

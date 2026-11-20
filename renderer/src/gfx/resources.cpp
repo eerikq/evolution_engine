@@ -21,7 +21,7 @@ bool gfx::CreateBuffer(const VmaAllocator allocator, const BufferDesc* desc, Buf
     }
 
     buffer->mapped_data = allocation_info.pMappedData;
-    buffer->size = allocation_info.size;
+    buffer->size = desc->size;
 
     evoLog(PrintSeverity::Debug, "Created buffer");
     return true;
@@ -36,11 +36,13 @@ void gfx::DestroyBuffer(const VmaAllocator allocator, Buffer* buffer) {
 }
 
 bool gfx::CreateTexture(const VkDevice logical_device, const VmaAllocator allocator, const TextureDesc* desc, Texture* texture) {
-    VkImageCreateInfo create_info {
+    texture->extent = {desc->width, desc->height, 1};
+
+    VkImageCreateInfo create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = desc->format,
-        .extent = {desc->width, desc->height, 1},
+        .extent = texture->extent,
         .mipLevels = 1,
         .arrayLayers = 1,
         .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -50,13 +52,14 @@ bool gfx::CreateTexture(const VkDevice logical_device, const VmaAllocator alloca
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    VmaAllocationCreateInfo allocation_info {
+    VmaAllocationCreateInfo allocation_info = {
         .flags = desc->allocation_flags,
         .usage = VMA_MEMORY_USAGE_AUTO,
     };
 
     if (vmaCreateImage(allocator, &create_info, &allocation_info, &texture->handle, &texture->allocation, nullptr)) {
         evoLog(PrintSeverity::Error, "Failed to create texture");
+        texture->extent = {};
         return false;
     }
 
