@@ -2,6 +2,10 @@
 
 struct SDL_Window;
 
+namespace renderer {
+    struct Camera;
+}
+
 namespace platform {
     struct Window {
         SDL_Window* window = nullptr;
@@ -21,7 +25,7 @@ namespace platform {
     };
 
     bool Init(const WindowDesc* desc);
-    void PollEvents(Window* window);
+    void PollEvents(Window* window, renderer::Camera* camera);
     void Quit();
 
     bool CreateWindow(Window* window, const WindowDesc* desc);
