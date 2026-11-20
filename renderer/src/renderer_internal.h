@@ -41,6 +41,7 @@ namespace renderer {
         gfx::Uploader uploader;
 
         uint32_t current_frame = 0;
+        uint32_t current_image_index = 0;
         gfx::Frame frames[config::FRAMES_IN_FLIGHT];
 
         // should technically be inside gfx::Swapchain since their lifetimes are very similar, both get resized and all.

@@ -29,7 +29,7 @@ namespace renderer {
 
         bool is_mouse_captured = false;
         int input_direction[3] = {0, 0, 0};
-        float camera_speed = 8.0;
+        float camera_speed = 4.0;
         float sensitivity = 0.125;
     };
 
