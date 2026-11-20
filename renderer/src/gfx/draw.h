@@ -4,6 +4,14 @@
 
 #include <volk.h>
 
+namespace platform {
+    struct Window;
+}
+namespace renderer {
+    struct Renderer;
+    struct Camera;
+} // namespace renderer
+
 namespace gfx {
     struct Frame {
         VkCommandPool command_pool;
@@ -13,6 +21,12 @@ namespace gfx {
         VkFence in_flight_fence;
         Buffer uniform_buffer;
     };
+
+    bool BeginFrame(platform::Window* window, renderer::Renderer* renderer, renderer::Camera* camera, Frame* frame);
+    void BeginRendering(renderer::Renderer* renderer, Frame* frame);
+    void DrawScene(renderer::Renderer* renderer, Frame* frame);
+    void EndFrame(renderer::Renderer* renderer, Frame* frame);
+
 }; // namespace gfx
 
 /*
