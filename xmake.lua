@@ -12,12 +12,10 @@ else
 end
 
 ------------------ packages ------------------
-add_repositories("local-repo xmake")
-
 add_requires("volk 1.4.335+0")
 add_requires("vulkan-headers 1.4.335+0")
 add_requires("vulkan-memory-allocator 3.3.0")
-add_requires("slang 2026.14.1") -- local package
+add_requires("slang")
 
 add_requires("tinyobjloader")
 -- add_requires("cgltf 1.15") -- implement after obj importing works
