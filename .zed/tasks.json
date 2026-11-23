@@ -1,24 +1,18 @@
 [
-  // not a binary anymore, keeping just in case.
-  // {
-  //   "label": "xmake :: run :: renderer",
-  //   "command": "xmake",
-  //   "args": ["run", "evolution_renderer"],
-  // },
   {
-    "label": "xmake :: build :: renderer",
+    "label": "xmake :: build :: engine",
     "command": "xmake",
-    "args": ["build", "evolution_renderer"],
+    "args": ["build", "evolution_engine"],
   },
   {
-    "label": "xmake :: run :: sandbox",
+    "label": "xmake :: run :: editor",
     "command": "xmake",
-    "args": ["run", "evolution_sandbox"],
+    "args": ["run", "evolution_editor"],
   },
   {
-    "label": "xmake :: build :: sandbox",
+    "label": "xmake :: build :: editor",
     "command": "xmake",
-    "args": ["build", "evolution_sandbox"],
+    "args": ["build", "evolution_editor"],
   },
   {
     "label": "slang :: compile shaders",

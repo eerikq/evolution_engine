@@ -2,29 +2,24 @@
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.compile_commands.autoupdate")
 
--- toolchain
+------------------ toolchain ------------------
 set_languages("c++20")
 
-if os.host() == "windows" then
+if is_mode("debug") then
+    add_defines("EVO_DEBUG")
+    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+end
+
+if is_host("windows") then
     set_toolchains("msvc")
 else
     set_toolchains("clang")
 end
 
 ------------------ packages ------------------
-add_requires("volk 1.4.335+0")
-add_requires("vulkan-headers 1.4.335+0")
-add_requires("vulkan-memory-allocator 3.3.0")
-add_requires("slang")
-
-add_requires("tinyobjloader")
--- add_requires("cgltf 1.15") -- implement after obj importing works
--- add_requires("assimp 6.0.5") -- assimp seems cool but i think cgltf does things in a way i like more
-
+-- core
 add_requires("glm 1.0.3")
 add_requires("fmt 12.2.0")
-add_requires("stb 2026.03.18")
-
 add_requires("libsdl3 3.4.12")
 add_requires("imgui v1.92.7-docking", {
     configs = {
@@ -35,18 +30,23 @@ add_requires("imgui v1.92.7-docking", {
     },
 })
 
------------------- renderer ------------------
-target("evolution_renderer")
+-- graphics
+add_requires("volk 1.4.335+0")
+add_requires("vulkan-headers 1.4.335+0")
+add_requires("vulkan-memory-allocator 3.3.0")
+add_requires("slang")
+
+-- assets
+add_requires("tinyobjloader")
+add_requires("stb 2026.03.18")
+
+------------------ engine ------------------
+target("evolution_engine")
     set_kind("static")
 
-    add_files("renderer/src/**.cpp")
-    add_includedirs("renderer/src")
-    add_includedirs("renderer/include", { public = true })
-
-    if is_mode("debug") then
-        add_defines("EVO_DEBUG")
-        add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
-    end
+    add_files("engine/src/**.cpp")
+    add_includedirs("engine/src")
+    add_includedirs("engine/include", { public = true })
 
     add_defines("SDL_MAIN_HANDLED")
     add_defines("VK_NO_PROTOTYPES")
@@ -55,18 +55,17 @@ target("evolution_renderer")
     add_defines("VMA_VULKAN_VERSION=1004000", "VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1")
 
     add_packages("volk", "vulkan-headers", "vulkan-memory-allocator", "slang")
-    add_packages("tinyobjloader", "glm", "fmt", "stb")
-    add_packages("libsdl3", "imgui")
+    add_packages("tinyobjloader", "stb")
+    add_packages("libsdl3", "imgui", "glm", "fmt")
 target_end()
 
------------------- sandbox ------------------
-target("evolution_sandbox")
+------------------ editor ------------------
+target("evolution_editor")
+    add_deps("evolution_engine", { whole = true })
     set_kind("binary")
-    add_deps("evolution_renderer", { whole = true })
 
-    add_files("sandbox/src/**.cpp")
-    add_includedirs("sandbox/src")
-    add_cxflags("-ferror-limit=0", { tools = { "clang", "clangxx" } })
+    add_files("editor/src/**.cpp")
+    add_includedirs("editor/src")
 
     after_build( function (target)
         import("core.project.task")

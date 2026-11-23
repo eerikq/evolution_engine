@@ -31,17 +31,4 @@ namespace platform {
     bool CreateWindow(Window* window, const WindowDesc* desc);
     void ResizeWindow(Window* window);
     void DestroyWindow(Window* window);
-    /*
-    // not strictly relevant right now, mostly for the future.
-    // this also doesn't belong here, will 100% need to be moved out to the engine.
-    struct Time {
-        int frame_count;   // total number of frames since the start
-        float time;        // time of the current frame since the start in seconds
-        double delta_time; // time difference between the last frame and the current one in seconds
-        float fps;         // current frames per second compares to the last frame
-        float fps_smooth;  // current frames per second compared to the average of the previous second
-    };
-
-    void UpdateTime(Time* time);
-    */
 } // namespace platform

@@ -1,13 +1,10 @@
-#include "SDL3/SDL_events.h"
-#include "evo/renderer.h" // SHOULDNT BE HERE
-//
-#include "core/log.h"
 #include "imgui_impl_sdl3.h"
 #include "platform/platform_sdl3_vulkan.h"
 
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_scancode.h>
+#include <evo/log.h>
 #include <evo/platform.h>
 
 bool platform::Init(const WindowDesc* description) {

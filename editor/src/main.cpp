@@ -1,4 +1,4 @@
-#include <cstdio>
+#include <evo/core/log.h>
 #include <evo/platform.h>
 #include <evo/renderer.h>
 #include <exception>
@@ -56,7 +56,7 @@ int main() {
         platform::DestroyWindow(&window);
         platform::Quit();
     } catch (const std::exception& e) {
-        std::printf("Exception: {%s}", e.what());
+        core::Log("Exception: {%s}", e.what());
         return EXIT_FAILURE;
     }
 
