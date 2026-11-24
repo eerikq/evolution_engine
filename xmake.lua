@@ -19,7 +19,6 @@ end
 ------------------ packages ------------------
 -- core
 add_requires("glm 1.0.3")
-add_requires("fmt 12.2.0")
 add_requires("libsdl3 3.4.12")
 add_requires("imgui v1.92.7-docking", {
     configs = {
@@ -54,9 +53,9 @@ target("evolution_engine")
     add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_FORCE_RADIANS")
     add_defines("VMA_VULKAN_VERSION=1004000", "VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1")
 
+    add_packages("glm", "libsdl3", "imgui")
     add_packages("volk", "vulkan-headers", "vulkan-memory-allocator", "slang")
     add_packages("tinyobjloader", "stb")
-    add_packages("libsdl3", "imgui", "glm", "fmt")
 target_end()
 
 ------------------ editor ------------------
