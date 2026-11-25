@@ -33,7 +33,7 @@ namespace print {
     template <typename... T>
     void Debug(PrintFormat<std::type_identity_t<T>...> message, T&&... args) {
 #ifdef EVO_DEBUG
-        Log(PrintSeverity::Debug, message, std::forward<T>(args)...);
+        Print(PrintSeverity::Debug, message, std::forward<T>(args)...);
 #endif
     }
 

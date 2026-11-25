@@ -3,6 +3,11 @@
 #include <evo/core/time.h>
 #include <iterator>
 #include <string>
+#include <string_view>
+
+static std::string_view GetPathFileName(std::string_view path) {
+    return path.substr(path.find_last_of("/\\") + 1);
+};
 
 void print::PrintImplementation(PrintSeverity severity, std::string_view message, std::source_location location) {
     constexpr const char* COLOR_RESET = "\033[0m";
@@ -23,11 +28,11 @@ void print::PrintImplementation(PrintSeverity severity, std::string_view message
             break;
         case PrintSeverity::Info:
             severity_color = COLOR_INFO;
-            severity_text = "Info.";
+            severity_text = " Info";
             break;
         case PrintSeverity::Warn:
             severity_color = COLOR_WARN;
-            severity_text = "Warn.";
+            severity_text = " Warn";
             break;
         case PrintSeverity::Error:
             severity_color = COLOR_ERROR;
@@ -43,9 +48,9 @@ void print::PrintImplementation(PrintSeverity severity, std::string_view message
     core::WallClock time = core::GetWallClock();
 
     std::format_to(std::back_inserter(buffer), "{}[{:02}:{:02}:{:02}.{:03}]", COLOR_GRAY, time.hours, time.minutes, time.seconds, time.milliseconds);
-    std::format_to(std::back_inserter(buffer), "{}[{}]: ", severity_color, severity_text);
+    std::format_to(std::back_inserter(buffer), "{} [{}] ", severity_color, severity_text);
     std::format_to(std::back_inserter(buffer), "{}", message);
-    std::format_to(std::back_inserter(buffer), "{} @ {}:{}:{}", COLOR_GRAY, location.file_name(), location.line(), location.column());
+    std::format_to(std::back_inserter(buffer), "{} @ {}:{}:{}", COLOR_GRAY, GetPathFileName(location.file_name()), location.line(), location.column());
     std::format_to(std::back_inserter(buffer), "{}\n", COLOR_RESET);
 
     std::fwrite(buffer.data(), 1, buffer.size(), stdout);
