@@ -1,38 +1,52 @@
-#include <chrono>
 #include <evo/core/time.h>
+#include <time.h>
 
-void core::UpdateTime(Time* time) {
-    time->frame_count += 1;
-    time->time = 0.0;
-    time->delta_time = 0.0f;
-    time->fps = 1.0f / time->delta_time;
-    time->fps_smooth = 0.0f;
-
-    time->last_time = 0.0;
-    time->fps_accum_time = 0.0f;
-    time->fps_accum_frames = 0.0f;
+static u64 GetCurrentTick() {
+    struct timespec time_spec;
+    timespec_get(&time_spec, TIME_UTC);
+    return (u64)(time_spec.tv_sec * 1000000000.0 + time_spec.tv_nsec);
 }
 
-core::WallClock GetWallClock(bool is_local = true) {
-    auto now = std::chrono::system_clock::now();
+inline static f64 TickToSeconds(const u64 tick) {
+    return (f64)tick / 1000000000.0;
+};
 
-    if (is_local) {
-        auto local_now = std::chrono::current_zone()->to_local(now);
-        auto duration = local_now.time_since_epoch();
+void core::UpdateTime(Time* time) {
+    u64 current_tick = GetCurrentTick();
 
-        return {
-            .hours = static_cast<u32>(std::chrono::duration_cast<std::chrono::hours>(duration).count()),
-            .minutes = static_cast<u32>(std::chrono::duration_cast<std::chrono::minutes>(duration).count()),
-            .seconds = static_cast<u32>(std::chrono::duration_cast<std::chrono::seconds>(duration).count()),
-            .milliseconds = static_cast<u32>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()),
-        };
+    // first time initialization
+    if (time->start_tick == 0) {
+        time->start_tick = current_tick;
+        time->prev_tick = current_tick;
     }
 
-    auto duration = now.time_since_epoch();
+    time->time = TickToSeconds(current_tick - time->start_tick);
+    time->delta_time = (f32)TickToSeconds(current_tick - time->prev_tick);
+    time->fps = time->delta_time > 0.0f ? 1.0f / time->delta_time : 0.0f;
+    time->prev_tick = current_tick;
+    time->frame_count += 1;
+
+    // smooth fps calculations
+    time->fps_accum_frames++;
+    time->fps_accum_time += time->delta_time;
+    if (time->fps_accum_time > 1.0f) {
+        time->fps_smooth = (f32)time->fps_accum_frames / time->fps_accum_time;
+
+        time->fps_accum_time = 0.0f;
+        time->fps_accum_frames = 0;
+    }
+}
+
+core::WallClock core::GetWallClock(bool is_local) {
+    struct timespec time_spec;
+    timespec_get(&time_spec, TIME_UTC);
+
+    tm* time = is_local ? localtime(&time_spec.tv_sec) : gmtime(&time_spec.tv_sec);
+
     return {
-        .hours = static_cast<u32>(std::chrono::duration_cast<std::chrono::hours>(duration).count()),
-        .minutes = static_cast<u32>(std::chrono::duration_cast<std::chrono::minutes>(duration).count()),
-        .seconds = static_cast<u32>(std::chrono::duration_cast<std::chrono::seconds>(duration).count()),
-        .milliseconds = static_cast<u32>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()),
+        .hours = (u16)(time->tm_hour),
+        .minutes = (u16)(time->tm_min),
+        .seconds = (u16)(time->tm_sec),
+        .milliseconds = (u16)(time_spec.tv_nsec / 1000000),
     };
 }
